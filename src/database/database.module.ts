@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Release } from './entities/release.entity';
+import { UserCollection } from './entities/user-collection.entity';
+import { UserWantlist } from './entities/user-wantlist.entity';
 
 @Module({
   imports: [
@@ -15,14 +17,14 @@ import { Release } from './entities/release.entity';
         username: configService.get('DB_USERNAME', 'postgres'),
         password: configService.get('DB_PASSWORD', 'password'),
         database: configService.get('DB_NAME', 'discogs'),
-        entities: [Release],
+        entities: [Release, UserCollection, UserWantlist],
         migrations: ['dist/database/migrations/*.js'],
         migrationsRun: true,
         synchronize: false,
         logging: configService.get('NODE_ENV') === 'development',
       }),
     }),
-    TypeOrmModule.forFeature([Release]),
+    TypeOrmModule.forFeature([Release, UserCollection, UserWantlist]),
   ],
   exports: [TypeOrmModule],
 })
