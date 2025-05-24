@@ -8,6 +8,9 @@ import {
 } from 'typeorm';
 
 @Entity('releases')
+@Index(['primaryArtist'])
+@Index(['year'])
+@Index(['title'])
 export class Release {
   @PrimaryGeneratedColumn()
   id: number;
@@ -21,6 +24,30 @@ export class Release {
 
   @Column({ nullable: true })
   year: number;
+
+  @Column({ name: 'primary_artist', nullable: true })
+  primaryArtist: string;
+
+  @Column({ name: 'all_artists', nullable: true })
+  allArtists: string;
+
+  @Column({ name: 'primary_genre', nullable: true })
+  primaryGenre: string;
+
+  @Column({ name: 'primary_style', nullable: true })
+  primaryStyle: string;
+
+  @Column({ name: 'primary_format', nullable: true })
+  primaryFormat: string;
+
+  @Column({ name: 'vinyl_color', nullable: true })
+  vinylColor: string;
+
+  @Column({ name: 'catalog_number', nullable: true })
+  catalogNumber: string;
+
+  @Column({ name: 'record_label', nullable: true })
+  recordLabel: string;
 
   @Column({ name: 'thumb_url', nullable: true })
   thumbUrl: string;

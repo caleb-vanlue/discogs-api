@@ -1,15 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DiscogsApiService } from './discogs-api.service';
 import { ReleaseRepository } from '../release/release.repository';
-import { DiscogsRelease, BasicInformation } from './types/discogs.types';
+import { DiscogsRelease } from './types/discogs.types';
 import { Release } from '../database/entities/release.entity';
+import { ReleaseDataExtractor } from '../database/helpers/release-data-extractor';
 import { UserCollectionRepository } from '../collection/repositories/user-collection.repository';
 import { UserWantlistRepository } from '../collection/repositories/user-wantlist.repository';
 
 @Injectable()
 export class DiscogsSyncService {
   private readonly logger = new Logger(DiscogsSyncService.name);
-  private readonly defaultUserId = 'Irrelativity'; // Make this configurable
+  private readonly defaultUserId = 'Irrelativity';
 
   constructor(
     private readonly discogsApi: DiscogsApiService,
@@ -17,23 +18,6 @@ export class DiscogsSyncService {
     private readonly collectionRepo: UserCollectionRepository,
     private readonly wantlistRepo: UserWantlistRepository,
   ) {}
-
-  private mapDiscogsToRelease(
-    discogsRelease: BasicInformation,
-  ): Partial<Release> {
-    return {
-      discogsId: discogsRelease.id,
-      title: discogsRelease.title,
-      year: discogsRelease.year || undefined,
-      thumbUrl: discogsRelease.thumb || undefined,
-      coverImageUrl: discogsRelease.cover_image || undefined,
-      artists: discogsRelease.artists || [],
-      labels: discogsRelease.labels || [],
-      formats: discogsRelease.formats || [],
-      genres: discogsRelease.genres || [],
-      styles: discogsRelease.styles || [],
-    };
-  }
 
   private processNotes(
     notes?: string | Array<{ field_id: number; value: string }>,
@@ -52,10 +36,9 @@ export class DiscogsSyncService {
   }
 
   private async syncRelease(discogsRelease: DiscogsRelease): Promise<Release> {
-    const releaseData = this.mapDiscogsToRelease(
+    const release = await this.releaseRepo.upsertFromDiscogs(
       discogsRelease.basic_information,
     );
-    const release = await this.releaseRepo.upsert(releaseData);
 
     if (!release) {
       throw new Error(
@@ -87,6 +70,9 @@ export class DiscogsSyncService {
             release.id,
           );
 
+          const releaseDataForSorting =
+            ReleaseDataExtractor.copyReleaseDataForSorting(release);
+
           if (!existing) {
             await this.collectionRepo.addToCollection({
               userId,
@@ -98,6 +84,7 @@ export class DiscogsSyncService {
               dateAdded: discogsRelease.date_added
                 ? new Date(discogsRelease.date_added)
                 : new Date(),
+              ...releaseDataForSorting,
             });
 
             synced++;
@@ -106,6 +93,7 @@ export class DiscogsSyncService {
             await this.collectionRepo.updateCollectionItem(userId, release.id, {
               rating: discogsRelease.rating || 0,
               notes: this.processNotes(discogsRelease.notes) || '',
+              ...releaseDataForSorting,
             });
 
             synced++;
@@ -155,6 +143,9 @@ export class DiscogsSyncService {
             release.id,
           );
 
+          const releaseDataForSorting =
+            ReleaseDataExtractor.copyReleaseDataForSorting(release);
+
           if (!existing) {
             await this.wantlistRepo.addToWantlist({
               userId,
@@ -163,6 +154,7 @@ export class DiscogsSyncService {
               dateAdded: discogsWant.date_added
                 ? new Date(discogsWant.date_added)
                 : new Date(),
+              ...releaseDataForSorting,
             });
 
             synced++;
@@ -170,6 +162,7 @@ export class DiscogsSyncService {
           } else {
             await this.wantlistRepo.updateWantlistItem(userId, release.id, {
               notes: this.processNotes(discogsWant.notes) || '',
+              ...releaseDataForSorting,
             });
 
             synced++;

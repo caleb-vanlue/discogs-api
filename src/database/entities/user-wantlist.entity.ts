@@ -12,6 +12,10 @@ import { Release } from './release.entity';
 
 @Entity('user_wantlists')
 @Index(['userId', 'releaseId'], { unique: true })
+@Index(['userId', 'dateAdded'])
+@Index(['userId', 'primaryArtist'])
+@Index(['userId', 'title'])
+@Index(['userId', 'year'])
 export class UserWantlist {
   @PrimaryGeneratedColumn()
   id: number;
@@ -28,6 +32,27 @@ export class UserWantlist {
 
   @Column({ name: 'date_added', type: 'timestamp', nullable: true })
   dateAdded: Date;
+
+  @Column({ nullable: true })
+  title: string;
+
+  @Column({ name: 'primary_artist', nullable: true })
+  primaryArtist: string;
+
+  @Column({ name: 'all_artists', nullable: true })
+  allArtists: string;
+
+  @Column({ nullable: true })
+  year: number;
+
+  @Column({ name: 'primary_genre', nullable: true })
+  primaryGenre: string;
+
+  @Column({ name: 'primary_format', nullable: true })
+  primaryFormat: string;
+
+  @Column({ name: 'vinyl_color', nullable: true })
+  vinylColor: string;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

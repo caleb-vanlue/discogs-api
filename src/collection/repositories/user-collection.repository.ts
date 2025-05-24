@@ -3,6 +3,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserCollection } from '../../database/entities/user-collection.entity';
 
+export type CollectionSortField =
+  | 'dateAdded'
+  | 'title'
+  | 'primaryArtist'
+  | 'year'
+  | 'rating'
+  | 'primaryGenre'
+  | 'primaryFormat';
+export type SortOrder = 'ASC' | 'DESC';
+
 @Injectable()
 export class UserCollectionRepository {
   private readonly logger = new Logger(UserCollectionRepository.name);
@@ -28,6 +38,26 @@ export class UserCollectionRepository {
     });
   }
 
+  async findByUserIdSorted(
+    userId: string,
+    limit: number = 50,
+    offset: number = 0,
+    sortBy: CollectionSortField = 'dateAdded',
+    sortOrder: SortOrder = 'DESC',
+  ): Promise<[UserCollection[], number]> {
+    this.logger.log(
+      `Finding collection for user ${userId} sorted by ${sortBy} ${sortOrder}`,
+    );
+
+    return this.repository.findAndCount({
+      where: { userId },
+      relations: ['release'],
+      take: limit,
+      skip: offset,
+      order: { [sortBy]: sortOrder },
+    });
+  }
+
   async findByUserAndRelease(
     userId: string,
     releaseId: number,
@@ -47,6 +77,13 @@ export class UserCollectionRepository {
     notes?: string;
     dateAdded?: Date;
     customFields?: Record<string, any>;
+    title?: string;
+    primaryArtist?: string;
+    allArtists?: string;
+    year?: number;
+    primaryGenre?: string;
+    primaryFormat?: string;
+    vinylColor?: string;
   }): Promise<UserCollection> {
     this.logger.log(
       `Adding release ${data.releaseId} to user ${data.userId} collection`,
@@ -88,5 +125,17 @@ export class UserCollectionRepository {
       ratedItems: ratings.length,
       averageRating: Math.round(avgRating * 10) / 10,
     };
+  }
+
+  getAvailableSortOptions(): { field: CollectionSortField; label: string }[] {
+    return [
+      { field: 'dateAdded', label: 'Date Added' },
+      { field: 'title', label: 'Title' },
+      { field: 'primaryArtist', label: 'Artist' },
+      { field: 'year', label: 'Year' },
+      { field: 'rating', label: 'Rating' },
+      { field: 'primaryGenre', label: 'Genre' },
+      { field: 'primaryFormat', label: 'Format' },
+    ];
   }
 }

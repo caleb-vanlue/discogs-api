@@ -1,6 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { UserCollectionRepository } from './repositories/user-collection.repository';
-import { UserWantlistRepository } from './repositories/user-wantlist.repository';
+import {
+  SortOrder,
+  UserWantlistRepository,
+  WantlistSortField,
+} from './repositories/user-wantlist.repository';
+import {
+  UserCollectionRepository,
+  CollectionSortField,
+} from './repositories/user-collection.repository';
 
 @Injectable()
 export class CollectionService {
@@ -11,11 +18,26 @@ export class CollectionService {
     private readonly wantlistRepo: UserWantlistRepository,
   ) {}
 
-  async getUserCollection(userId: string, limit?: number, offset?: number) {
-    const [items, total] = await this.collectionRepo.findByUserId(
+  async getUserCollection(
+    userId: string,
+    limit?: number,
+    offset?: number,
+    sortBy?: string,
+    sortOrder?: string,
+  ) {
+    const sortField = this.mapCollectionSortField(sortBy);
+    const order = this.mapSortOrder(sortOrder);
+
+    this.logger.log(
+      `Getting collection for user ${userId} - sort: ${sortField} ${order}`,
+    );
+
+    const [items, total] = await this.collectionRepo.findByUserIdSorted(
       userId,
       limit || 50,
       offset || 0,
+      sortField,
+      order,
     );
 
     return {
@@ -24,14 +46,31 @@ export class CollectionService {
       limit: limit || 50,
       offset: offset || 0,
       hasMore: (offset || 0) + items.length < total,
+      sortBy: sortField,
+      sortOrder: order,
     };
   }
 
-  async getUserWantlist(userId: string, limit?: number, offset?: number) {
-    const [items, total] = await this.wantlistRepo.findByUserId(
+  async getUserWantlist(
+    userId: string,
+    limit?: number,
+    offset?: number,
+    sortBy?: string,
+    sortOrder?: string,
+  ) {
+    const sortField = this.mapWantlistSortField(sortBy);
+    const order = this.mapSortOrder(sortOrder);
+
+    this.logger.log(
+      `Getting wantlist for user ${userId} - sort: ${sortField} ${order}`,
+    );
+
+    const [items, total] = await this.wantlistRepo.findByUserIdSorted(
       userId,
       limit || 50,
       offset || 0,
+      sortField,
+      order,
     );
 
     return {
@@ -40,6 +79,8 @@ export class CollectionService {
       limit: limit || 50,
       offset: offset || 0,
       hasMore: (offset || 0) + items.length < total,
+      sortBy: sortField,
+      sortOrder: order,
     };
   }
 
@@ -109,5 +150,55 @@ export class CollectionService {
   async removeFromWantlist(userId: string, releaseId: number) {
     await this.wantlistRepo.removeFromWantlist(userId, releaseId);
     return { message: 'Release removed from wantlist', releaseId };
+  }
+
+  getCollectionSortOptions() {
+    return this.collectionRepo.getAvailableSortOptions();
+  }
+
+  getWantlistSortOptions() {
+    return this.wantlistRepo.getAvailableSortOptions();
+  }
+
+  private mapCollectionSortField(sortBy?: string): CollectionSortField {
+    const mapping: Record<string, CollectionSortField> = {
+      added: 'dateAdded',
+      date_added: 'dateAdded',
+      dateAdded: 'dateAdded',
+      title: 'title',
+      artist: 'primaryArtist',
+      primaryArtist: 'primaryArtist',
+      year: 'year',
+      rating: 'rating',
+      genre: 'primaryGenre',
+      primaryGenre: 'primaryGenre',
+      format: 'primaryFormat',
+      primaryFormat: 'primaryFormat',
+    };
+
+    return mapping[sortBy || 'added'] || 'dateAdded';
+  }
+
+  private mapWantlistSortField(sortBy?: string): WantlistSortField {
+    const mapping: Record<string, WantlistSortField> = {
+      added: 'dateAdded',
+      date_added: 'dateAdded',
+      dateAdded: 'dateAdded',
+      title: 'title',
+      artist: 'primaryArtist',
+      primaryArtist: 'primaryArtist',
+      year: 'year',
+      genre: 'primaryGenre',
+      primaryGenre: 'primaryGenre',
+      format: 'primaryFormat',
+      primaryFormat: 'primaryFormat',
+    };
+
+    return mapping[sortBy || 'added'] || 'dateAdded';
+  }
+
+  private mapSortOrder(sortOrder?: string): SortOrder {
+    const order = sortOrder?.toLowerCase();
+    return order === 'asc' || order === 'ascending' ? 'ASC' : 'DESC';
   }
 }

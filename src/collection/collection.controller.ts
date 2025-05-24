@@ -28,29 +28,97 @@ export class CollectionController {
   @Get(':userId')
   @ApiOperation({ summary: 'Get user collection' })
   @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'offset', required: false, type: Number })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of items per page',
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Number of items to skip',
+  })
+  @ApiQuery({
+    name: 'sort_by',
+    required: false,
+    type: String,
+    description: 'Sort field',
+    enum: ['added', 'title', 'artist', 'year', 'rating', 'genre', 'format'],
+  })
+  @ApiQuery({
+    name: 'sort_order',
+    required: false,
+    type: String,
+    description: 'Sort order',
+    enum: ['asc', 'desc'],
+  })
   async getUserCollection(
     @Param('userId') userId: string,
     @Query('limit') limit?: number,
     @Query('offset') offset?: number,
+    @Query('sort_by') sortBy?: string,
+    @Query('sort_order') sortOrder?: string,
   ) {
-    this.logger.log(`Getting collection for user ${userId}`);
-    return this.collectionService.getUserCollection(userId, limit, offset);
+    this.logger.log(
+      `Getting collection for user ${userId} - sort: ${sortBy} ${sortOrder}`,
+    );
+    return this.collectionService.getUserCollection(
+      userId,
+      limit,
+      offset,
+      sortBy,
+      sortOrder,
+    );
   }
 
   @Get(':userId/wantlist')
   @ApiOperation({ summary: 'Get user wantlist' })
   @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'offset', required: false, type: Number })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of items per page',
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Number of items to skip',
+  })
+  @ApiQuery({
+    name: 'sort_by',
+    required: false,
+    type: String,
+    description: 'Sort field',
+    enum: ['added', 'title', 'artist', 'year', 'genre', 'format'],
+  })
+  @ApiQuery({
+    name: 'sort_order',
+    required: false,
+    type: String,
+    description: 'Sort order',
+    enum: ['asc', 'desc'],
+  })
   async getUserWantlist(
     @Param('userId') userId: string,
     @Query('limit') limit?: number,
     @Query('offset') offset?: number,
+    @Query('sort_by') sortBy?: string,
+    @Query('sort_order') sortOrder?: string,
   ) {
-    this.logger.log(`Getting wantlist for user ${userId}`);
-    return this.collectionService.getUserWantlist(userId, limit, offset);
+    this.logger.log(
+      `Getting wantlist for user ${userId} - sort: ${sortBy} ${sortOrder}`,
+    );
+    return this.collectionService.getUserWantlist(
+      userId,
+      limit,
+      offset,
+      sortBy,
+      sortOrder,
+    );
   }
 
   @Get(':userId/stats')
@@ -59,6 +127,17 @@ export class CollectionController {
   async getUserStats(@Param('userId') userId: string) {
     this.logger.log(`Getting stats for user ${userId}`);
     return this.collectionService.getUserStats(userId);
+  }
+
+  @Get(':userId/sort-options')
+  @ApiOperation({ summary: 'Get available sort options' })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  async getSortOptions() {
+    this.logger.log('Getting available sort options');
+    return {
+      collection: this.collectionService.getCollectionSortOptions(),
+      wantlist: this.collectionService.getWantlistSortOptions(),
+    };
   }
 
   @Post(':userId/collection')
