@@ -9,6 +9,6 @@ import { ReleaseService } from './release.service';
   imports: [TypeOrmModule.forFeature([Release])],
   providers: [ReleaseRepository, ReleaseService],
   controllers: [ReleaseController],
-  exports: [ReleaseService],
+  exports: [ReleaseService, ReleaseRepository],
 })
 export class ReleaseModule {}
