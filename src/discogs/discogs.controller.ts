@@ -1,11 +1,5 @@
 import { Controller, Get, Post, Param, Query, Logger } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiParam,
-  ApiQuery,
-  ApiResponse,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { DiscogsApiService } from './discogs-api.service';
 import { DiscogsSyncService } from './discogs-sync.service';
 import { DiscogsQueryParams } from './types/discogs.types';
