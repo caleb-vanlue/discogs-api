@@ -1,13 +1,18 @@
-import { Injectable, Logger } from '@nestjs/common';
 import {
-  SortOrder,
-  UserWantlistRepository,
-  WantlistSortField,
-} from './repositories/user-wantlist.repository';
+  Injectable,
+  Logger,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
+import { UserWantlistRepository } from './repositories/user-wantlist.repository';
+import { UserCollectionRepository } from './repositories/user-collection.repository';
 import {
-  UserCollectionRepository,
   CollectionSortField,
-} from './repositories/user-collection.repository';
+  WantlistSortField,
+  SortOrder,
+  DEFAULT_LIMIT,
+  DEFAULT_OFFSET,
+} from '../common/constants/sort.constants';
 
 @Injectable()
 export class CollectionService {
@@ -34,8 +39,8 @@ export class CollectionService {
 
     const [items, total] = await this.collectionRepo.findByUserIdSorted(
       userId,
-      limit || 50,
-      offset || 0,
+      limit || DEFAULT_LIMIT,
+      offset || DEFAULT_OFFSET,
       sortField,
       order,
     );
@@ -43,8 +48,8 @@ export class CollectionService {
     return {
       data: items,
       total,
-      limit: limit || 50,
-      offset: offset || 0,
+      limit: limit || DEFAULT_LIMIT,
+      offset: offset || DEFAULT_OFFSET,
       hasMore: (offset || 0) + items.length < total,
       sortBy: sortField,
       sortOrder: order,
@@ -67,8 +72,8 @@ export class CollectionService {
 
     const [items, total] = await this.wantlistRepo.findByUserIdSorted(
       userId,
-      limit || 50,
-      offset || 0,
+      limit || DEFAULT_LIMIT,
+      offset || DEFAULT_OFFSET,
       sortField,
       order,
     );
@@ -76,8 +81,8 @@ export class CollectionService {
     return {
       data: items,
       total,
-      limit: limit || 50,
-      offset: offset || 0,
+      limit: limit || DEFAULT_LIMIT,
+      offset: offset || DEFAULT_OFFSET,
       hasMore: (offset || 0) + items.length < total,
       sortBy: sortField,
       sortOrder: order,
@@ -109,17 +114,26 @@ export class CollectionService {
       userId,
       data.releaseId,
     );
+
     if (existing) {
-      throw new Error('Release already in collection');
+      throw new ConflictException('Release already in collection');
     }
 
-    return this.collectionRepo.addToCollection({
-      userId,
-      releaseId: data.releaseId,
-      rating: data.rating || 0,
-      notes: data.notes,
-      dateAdded: new Date(),
-    });
+    try {
+      return await this.collectionRepo.addToCollection({
+        userId,
+        releaseId: data.releaseId,
+        rating: data.rating || 0,
+        notes: data.notes,
+        dateAdded: new Date(),
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to add release ${data.releaseId} to collection for user ${userId}`,
+        error,
+      );
+      throw error;
+    }
   }
 
   async addToWantlist(
@@ -130,26 +144,69 @@ export class CollectionService {
       userId,
       data.releaseId,
     );
+
     if (existing) {
-      throw new Error('Release already in wantlist');
+      throw new ConflictException('Release already in wantlist');
     }
 
-    return this.wantlistRepo.addToWantlist({
-      userId,
-      releaseId: data.releaseId,
-      notes: data.notes,
-      dateAdded: new Date(),
-    });
+    try {
+      return await this.wantlistRepo.addToWantlist({
+        userId,
+        releaseId: data.releaseId,
+        notes: data.notes,
+        dateAdded: new Date(),
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to add release ${data.releaseId} to wantlist for user ${userId}`,
+        error,
+      );
+      throw error;
+    }
   }
 
   async removeFromCollection(userId: string, releaseId: number) {
-    await this.collectionRepo.removeFromCollection(userId, releaseId);
-    return { message: 'Release removed from collection', releaseId };
+    const existing = await this.collectionRepo.findByUserAndRelease(
+      userId,
+      releaseId,
+    );
+
+    if (!existing) {
+      throw new NotFoundException('Release not found in collection');
+    }
+
+    try {
+      await this.collectionRepo.removeFromCollection(userId, releaseId);
+      return { message: 'Release removed from collection', releaseId };
+    } catch (error) {
+      this.logger.error(
+        `Failed to remove release ${releaseId} from collection for user ${userId}`,
+        error,
+      );
+      throw error;
+    }
   }
 
   async removeFromWantlist(userId: string, releaseId: number) {
-    await this.wantlistRepo.removeFromWantlist(userId, releaseId);
-    return { message: 'Release removed from wantlist', releaseId };
+    const existing = await this.wantlistRepo.findByUserAndRelease(
+      userId,
+      releaseId,
+    );
+
+    if (!existing) {
+      throw new NotFoundException('Release not found in wantlist');
+    }
+
+    try {
+      await this.wantlistRepo.removeFromWantlist(userId, releaseId);
+      return { message: 'Release removed from wantlist', releaseId };
+    } catch (error) {
+      this.logger.error(
+        `Failed to remove release ${releaseId} from wantlist for user ${userId}`,
+        error,
+      );
+      throw error;
+    }
   }
 
   getCollectionSortOptions() {

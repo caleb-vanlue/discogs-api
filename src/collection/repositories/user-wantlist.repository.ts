@@ -2,15 +2,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserWantlist } from '../../database/entities/user-wantlist.entity';
-
-export type WantlistSortField =
-  | 'dateAdded'
-  | 'title'
-  | 'primaryArtist'
-  | 'year'
-  | 'primaryGenre'
-  | 'primaryFormat';
-export type SortOrder = 'ASC' | 'DESC';
+import {
+  WantlistSortField,
+  SortOrder,
+  WANTLIST_SORT_OPTIONS,
+  DEFAULT_LIMIT,
+  DEFAULT_OFFSET,
+  DEFAULT_SORT_ORDER,
+} from '../../common/constants/sort.constants';
 
 @Injectable()
 export class UserWantlistRepository {
@@ -23,8 +22,8 @@ export class UserWantlistRepository {
 
   async findByUserId(
     userId: string,
-    limit: number = 50,
-    offset: number = 0,
+    limit: number = DEFAULT_LIMIT,
+    offset: number = DEFAULT_OFFSET,
   ): Promise<[UserWantlist[], number]> {
     this.logger.log(`Finding wantlist for user ${userId}`);
 
@@ -33,17 +32,16 @@ export class UserWantlistRepository {
       relations: ['release'],
       take: limit,
       skip: offset,
-      order: { dateAdded: 'DESC' },
+      order: { dateAdded: DEFAULT_SORT_ORDER },
     });
   }
 
-  // NEW: Method with sorting support
   async findByUserIdSorted(
     userId: string,
-    limit: number = 50,
-    offset: number = 0,
+    limit: number = DEFAULT_LIMIT,
+    offset: number = DEFAULT_OFFSET,
     sortBy: WantlistSortField = 'dateAdded',
-    sortOrder: SortOrder = 'DESC',
+    sortOrder: SortOrder = DEFAULT_SORT_ORDER,
   ): Promise<[UserWantlist[], number]> {
     this.logger.log(
       `Finding wantlist for user ${userId} sorted by ${sortBy} ${sortOrder}`,
@@ -73,7 +71,6 @@ export class UserWantlistRepository {
     releaseId: number;
     notes?: string;
     dateAdded?: Date;
-    // NEW: Add sortable fields
     title?: string;
     primaryArtist?: string;
     allArtists?: string;
@@ -116,15 +113,7 @@ export class UserWantlistRepository {
     };
   }
 
-  // NEW: Get available sort options
   getAvailableSortOptions(): { field: WantlistSortField; label: string }[] {
-    return [
-      { field: 'dateAdded', label: 'Date Added' },
-      { field: 'title', label: 'Title' },
-      { field: 'primaryArtist', label: 'Artist' },
-      { field: 'year', label: 'Year' },
-      { field: 'primaryGenre', label: 'Genre' },
-      { field: 'primaryFormat', label: 'Format' },
-    ];
+    return WANTLIST_SORT_OPTIONS;
   }
 }

@@ -2,16 +2,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserCollection } from '../../database/entities/user-collection.entity';
-
-export type CollectionSortField =
-  | 'dateAdded'
-  | 'title'
-  | 'primaryArtist'
-  | 'year'
-  | 'rating'
-  | 'primaryGenre'
-  | 'primaryFormat';
-export type SortOrder = 'ASC' | 'DESC';
+import {
+  CollectionSortField,
+  SortOrder,
+  COLLECTION_SORT_OPTIONS,
+  DEFAULT_LIMIT,
+  DEFAULT_OFFSET,
+  DEFAULT_SORT_ORDER,
+} from '../../common/constants/sort.constants';
 
 @Injectable()
 export class UserCollectionRepository {
@@ -24,8 +22,8 @@ export class UserCollectionRepository {
 
   async findByUserId(
     userId: string,
-    limit: number = 50,
-    offset: number = 0,
+    limit: number = DEFAULT_LIMIT,
+    offset: number = DEFAULT_OFFSET,
   ): Promise<[UserCollection[], number]> {
     this.logger.log(`Finding collection for user ${userId}`);
 
@@ -34,16 +32,16 @@ export class UserCollectionRepository {
       relations: ['release'],
       take: limit,
       skip: offset,
-      order: { dateAdded: 'DESC' },
+      order: { dateAdded: DEFAULT_SORT_ORDER },
     });
   }
 
   async findByUserIdSorted(
     userId: string,
-    limit: number = 50,
-    offset: number = 0,
+    limit: number = DEFAULT_LIMIT,
+    offset: number = DEFAULT_OFFSET,
     sortBy: CollectionSortField = 'dateAdded',
-    sortOrder: SortOrder = 'DESC',
+    sortOrder: SortOrder = DEFAULT_SORT_ORDER,
   ): Promise<[UserCollection[], number]> {
     this.logger.log(
       `Finding collection for user ${userId} sorted by ${sortBy} ${sortOrder}`,
@@ -128,14 +126,6 @@ export class UserCollectionRepository {
   }
 
   getAvailableSortOptions(): { field: CollectionSortField; label: string }[] {
-    return [
-      { field: 'dateAdded', label: 'Date Added' },
-      { field: 'title', label: 'Title' },
-      { field: 'primaryArtist', label: 'Artist' },
-      { field: 'year', label: 'Year' },
-      { field: 'rating', label: 'Rating' },
-      { field: 'primaryGenre', label: 'Genre' },
-      { field: 'primaryFormat', label: 'Format' },
-    ];
+    return COLLECTION_SORT_OPTIONS;
   }
 }
