@@ -2,15 +2,16 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { DiscogsSyncService } from './discogs-sync.service';
+import { DiscogsConfig } from './discogs.config';
 
 @Injectable()
 export class SyncSchedulerService implements OnModuleInit {
   private readonly logger = new Logger(SyncSchedulerService.name);
-  private readonly defaultUserId = 'Irrelativity';
 
   constructor(
     private readonly syncService: DiscogsSyncService,
     private readonly configService: ConfigService,
+    private readonly discogsConfig: DiscogsConfig,
   ) {}
 
   async onModuleInit() {
@@ -59,7 +60,9 @@ export class SyncSchedulerService implements OnModuleInit {
     this.logger.log(`Starting full sync (trigger: ${trigger})`);
 
     try {
-      const result = await this.syncService.syncAll(this.defaultUserId);
+      const result = await this.syncService.syncAll(
+        this.discogsConfig.username,
+      );
 
       const duration = Date.now() - startTime;
       const durationMinutes = Math.round((duration / 1000 / 60) * 100) / 100;

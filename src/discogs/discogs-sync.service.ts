@@ -6,17 +6,18 @@ import { Release } from '../database/entities/release.entity';
 import { ReleaseDataExtractor } from '../database/helpers/release-data-extractor';
 import { UserCollectionRepository } from '../collection/repositories/user-collection.repository';
 import { UserWantlistRepository } from '../collection/repositories/user-wantlist.repository';
+import { DiscogsConfig } from './discogs.config';
 
 @Injectable()
 export class DiscogsSyncService {
   private readonly logger = new Logger(DiscogsSyncService.name);
-  private readonly defaultUserId = 'Irrelativity';
 
   constructor(
     private readonly discogsApi: DiscogsApiService,
     private readonly releaseRepo: ReleaseRepository,
     private readonly collectionRepo: UserCollectionRepository,
     private readonly wantlistRepo: UserWantlistRepository,
+    private readonly discogsConfig: DiscogsConfig,
   ) {}
 
   private processNotes(
@@ -49,7 +50,9 @@ export class DiscogsSyncService {
     return release;
   }
 
-  async syncUserCollection(userId: string = this.defaultUserId): Promise<{
+  async syncUserCollection(
+    userId: string = this.discogsConfig.username,
+  ): Promise<{
     synced: number;
     errors: number;
     total: number;
@@ -122,7 +125,9 @@ export class DiscogsSyncService {
     }
   }
 
-  async syncUserWantlist(userId: string = this.defaultUserId): Promise<{
+  async syncUserWantlist(
+    userId: string = this.discogsConfig.username,
+  ): Promise<{
     synced: number;
     errors: number;
     total: number;
@@ -191,7 +196,7 @@ export class DiscogsSyncService {
     }
   }
 
-  async syncAll(userId: string = this.defaultUserId): Promise<{
+  async syncAll(userId: string = this.discogsConfig.username): Promise<{
     collection: { synced: number; errors: number; total: number };
     wantlist: { synced: number; errors: number; total: number };
   }> {
@@ -211,7 +216,7 @@ export class DiscogsSyncService {
     return result;
   }
 
-  async getSyncStatus(userId: string = this.defaultUserId) {
+  async getSyncStatus(userId: string = this.discogsConfig.username) {
     const [collectionStats, wantlistStats] = await Promise.all([
       this.collectionRepo.getCollectionStats(userId),
       this.wantlistRepo.getWantlistStats(userId),

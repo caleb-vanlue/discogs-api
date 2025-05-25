@@ -1,4 +1,3 @@
-// discogs/discogs.module.ts
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule } from '@nestjs/config';
@@ -9,6 +8,7 @@ import { SyncSchedulerService } from './sync-scheduler.service';
 import { DiscogsController } from './discogs.controller';
 import { ReleaseModule } from '../release/release.module';
 import { CollectionModule } from '../collection/collection.module';
+import { DiscogsConfig } from './discogs.config';
 
 @Module({
   imports: [
@@ -21,8 +21,18 @@ import { CollectionModule } from '../collection/collection.module';
     ReleaseModule,
     CollectionModule,
   ],
-  providers: [DiscogsApiService, DiscogsSyncService, SyncSchedulerService],
+  providers: [
+    DiscogsApiService,
+    DiscogsSyncService,
+    DiscogsConfig,
+    SyncSchedulerService,
+  ],
   controllers: [DiscogsController],
-  exports: [DiscogsApiService, DiscogsSyncService, SyncSchedulerService],
+  exports: [
+    DiscogsApiService,
+    DiscogsSyncService,
+    DiscogsConfig,
+    SyncSchedulerService,
+  ],
 })
 export class DiscogsModule {}

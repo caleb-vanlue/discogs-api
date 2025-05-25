@@ -8,16 +8,16 @@ import {
   DiscogsQueryParams,
   DiscogsRelease,
 } from './types/discogs.types';
+import { DiscogsConfig } from './discogs.config';
 
 @Injectable()
 export class DiscogsApiService {
   private readonly logger = new Logger(DiscogsApiService.name);
-  private readonly discogsApiBase = 'https://api.discogs.com';
-  private readonly discogsUsername = 'Irrelativity'; // Make this configurable later
 
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    private readonly discogsConfig: DiscogsConfig,
   ) {}
 
   private get discogsToken(): string {
@@ -40,12 +40,12 @@ export class DiscogsApiService {
       perPage = 50,
     } = params;
 
-    return `${this.discogsApiBase}/users/${this.discogsUsername}/collection/folders/${folder}/releases?sort=${sort}&sort_order=${sortOrder}&page=${page}&per_page=${perPage}`;
+    return `${this.discogsConfig.baseUrl}/users/${this.discogsConfig.username}/collection/folders/${folder}/releases?sort=${sort}&sort_order=${sortOrder}&page=${page}&per_page=${perPage}`;
   }
 
   private buildWantlistUrl(params: DiscogsQueryParams): string {
     const { page = 1, perPage = 50 } = params;
-    return `${this.discogsApiBase}/users/${this.discogsUsername}/wants?page=${page}&per_page=${perPage}`;
+    return `${this.discogsConfig.baseUrl}/users/${this.discogsConfig.username}/wants?page=${page}&per_page=${perPage}`;
   }
 
   private getRequestHeaders() {
@@ -121,7 +121,6 @@ export class DiscogsApiService {
     }
   }
 
-  // Utility method to get all pages of collection
   async getAllCollection(): Promise<DiscogsRelease[]> {
     const allReleases: DiscogsRelease[] = [];
     let page = 1;
@@ -139,7 +138,6 @@ export class DiscogsApiService {
         `Fetched page ${page - 1}/${totalPages} (${response.releases.length} releases)`,
       );
 
-      // Add delay to respect rate limits
       if (page <= totalPages) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
@@ -151,7 +149,6 @@ export class DiscogsApiService {
     return allReleases;
   }
 
-  // Utility method to get all pages of wantlist
   async getAllWantlist(): Promise<DiscogsRelease[]> {
     const allWants: DiscogsRelease[] = [];
     let page = 1;
@@ -169,7 +166,6 @@ export class DiscogsApiService {
         `Fetched page ${page - 1}/${totalPages} (${response.wants.length} wants)`,
       );
 
-      // Add delay to respect rate limits
       if (page <= totalPages) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
