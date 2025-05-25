@@ -13,6 +13,7 @@ export default registerAs('app', () => ({
     apiToken: process.env.DISCOGS_API_TOKEN,
     baseUrl: process.env.DISCOGS_API_BASE_URL || 'https://api.discogs.com',
   },
+  apiKey: process.env.API_KEY,
   port: parseInt(process.env.PORT ?? '3000'),
   nodeEnv: process.env.NODE_ENV || 'development',
 }));

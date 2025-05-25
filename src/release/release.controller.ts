@@ -1,9 +1,25 @@
-import { Controller, Get, Param, Query, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  ParseIntPipe,
+  UseGuards,
+} from '@nestjs/common';
 import { ReleaseService } from './release.service';
-import { ApiOperation, ApiTags, ApiParam, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiTags,
+  ApiParam,
+  ApiResponse,
+  ApiSecurity,
+} from '@nestjs/swagger';
 import { ReleaseQueryDto } from './dto/release-query.dto';
+import { ApiKeyGuard } from '../common/guards/api-key.guard';
 
 @ApiTags('releases')
+@ApiSecurity('api-key')
+@UseGuards(ApiKeyGuard)
 @Controller('releases')
 export class ReleaseController {
   constructor(private readonly releaseService: ReleaseService) {}
@@ -13,6 +29,10 @@ export class ReleaseController {
   @ApiResponse({
     status: 200,
     description: 'Releases retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing API key',
   })
   async getReleases(@Query() query: ReleaseQueryDto) {
     return this.releaseService.getReleases(
@@ -29,6 +49,10 @@ export class ReleaseController {
   @ApiResponse({
     status: 200,
     description: 'Release found',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing API key',
   })
   @ApiResponse({
     status: 404,

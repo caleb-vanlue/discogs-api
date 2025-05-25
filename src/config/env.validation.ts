@@ -23,6 +23,9 @@ class EnvironmentVariables {
   PORT?: number = 3000;
 
   @IsString()
+  API_KEY: string;
+
+  @IsString()
   @IsOptional()
   DB_HOST?: string = 'localhost';
 

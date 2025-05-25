@@ -24,10 +24,30 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Discogs Collection API')
-    .setDescription('An API to manage Discogs collections and wantlists')
+    .setDescription(
+      'An API to manage Discogs collections and wantlists with full CRUD operations. Requires API key authentication.',
+    )
     .setVersion('1.0')
     .addTag('releases', 'Release management operations')
     .addTag('collection', 'Collection and wantlist operations')
+    .addApiKey(
+      {
+        type: 'apiKey',
+        name: 'X-API-Key',
+        in: 'header',
+        description: 'API Key for authentication',
+      },
+      'api-key',
+    )
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'API Key',
+        description: 'API Key as Bearer token',
+      },
+      'bearer-auth',
+    )
     .build();
 
   const documentFactory = () => SwaggerModule.createDocument(app, config);
@@ -36,11 +56,12 @@ async function bootstrap() {
   const port = configService.get<number>('app.port', 3000);
   await app.listen(port);
 
-  console.log(`Application is running on: http://localhost:${port}`);
-  console.log(`API Documentation: http://localhost:${port}/api`);
+  console.log(`🚀 Application is running on: http://localhost:${port}`);
+  console.log(`📚 API Documentation: http://localhost:${port}/api`);
   console.log(
-    `Discogs Username: ${configService.get<string>('app.discogs.username')}`,
+    `👤 Discogs Username: ${configService.get<string>('app.discogs.username')}`,
   );
+  console.log(`API Key required for all endpoints`);
 }
 
 bootstrap();

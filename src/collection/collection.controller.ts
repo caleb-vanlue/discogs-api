@@ -8,6 +8,7 @@ import {
   Query,
   Logger,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -15,6 +16,7 @@ import {
   ApiParam,
   ApiResponse,
   ApiBody,
+  ApiSecurity,
 } from '@nestjs/swagger';
 import { CollectionService } from './collection.service';
 import { AddToCollectionDto } from './dto/add-to-collection.dto';
@@ -23,8 +25,11 @@ import {
   CollectionQueryDto,
   WantlistQueryDto,
 } from './dto/collection-query.dto';
+import { ApiKeyGuard } from '../common/guards/api-key.guard';
 
 @ApiTags('collection')
+@ApiSecurity('api-key')
+@UseGuards(ApiKeyGuard)
 @Controller('collection')
 export class CollectionController {
   private readonly logger = new Logger(CollectionController.name);
@@ -37,6 +42,10 @@ export class CollectionController {
   @ApiResponse({
     status: 200,
     description: 'User collection retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing API key',
   })
   @ApiResponse({
     status: 404,
@@ -66,6 +75,10 @@ export class CollectionController {
     description: 'User wantlist retrieved successfully',
   })
   @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing API key',
+  })
+  @ApiResponse({
     status: 404,
     description: 'User not found',
   })
@@ -92,6 +105,10 @@ export class CollectionController {
     status: 200,
     description: 'User stats retrieved successfully',
   })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing API key',
+  })
   async getUserStats(@Param('userId') userId: string) {
     this.logger.log(`Getting stats for user ${userId}`);
     return this.collectionService.getUserStats(userId);
@@ -103,6 +120,10 @@ export class CollectionController {
   @ApiResponse({
     status: 200,
     description: 'Sort options retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing API key',
   })
   async getSortOptions() {
     this.logger.log('Getting available sort options');
@@ -119,6 +140,10 @@ export class CollectionController {
   @ApiResponse({
     status: 201,
     description: 'Release added to collection successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing API key',
   })
   @ApiResponse({
     status: 409,
@@ -147,6 +172,10 @@ export class CollectionController {
     description: 'Release added to wantlist successfully',
   })
   @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing API key',
+  })
+  @ApiResponse({
     status: 409,
     description: 'Release already in wantlist',
   })
@@ -173,6 +202,10 @@ export class CollectionController {
     description: 'Release removed from collection successfully',
   })
   @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing API key',
+  })
+  @ApiResponse({
     status: 404,
     description: 'Release not found in collection',
   })
@@ -193,6 +226,10 @@ export class CollectionController {
   @ApiResponse({
     status: 200,
     description: 'Release removed from wantlist successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing API key',
   })
   @ApiResponse({
     status: 404,
