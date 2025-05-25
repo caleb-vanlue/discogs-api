@@ -1,10 +1,27 @@
-import { Controller, Get, Post, Param, Query, Logger } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  Logger,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiSecurity,
+} from '@nestjs/swagger';
 import { DiscogsApiService } from './discogs-api.service';
 import { DiscogsSyncService } from './discogs-sync.service';
 import { DiscogsQueryParams } from './types/discogs.types';
+import { ApiKeyGuard } from '../common/guards/api-key.guard';
 
 @ApiTags('discogs')
+@ApiSecurity('api-key')
+@UseGuards(ApiKeyGuard)
 @Controller('discogs')
 export class DiscogsController {
   private readonly logger = new Logger(DiscogsController.name);
