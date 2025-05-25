@@ -1,98 +1,191 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Discogs Collection API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A NestJS REST API for managing Discogs music collections and wantlists with CRUD operations, advanced sorting, pagination, and API key authentication.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Features
 
-## Description
+- **Collection Management**: Add, remove, and organize Discogs collection items with ratings and notes
+- **Wantlist Management**: Track desired releases with personal notes
+- **Advanced Sorting**: Sort by date added, title, artist, year, rating, genre, or format
+- **Pagination**: Handle large collections with configurable page sizes
+- **Statistics**: Collection and wantlist analytics with rating averages
+- **API Key Authentication**: Secure endpoints with token-based access control
+- **Request Validation**: Comprehensive input validation with detailed error messages
+- **API Documentation**: Interactive Swagger/OpenAPI documentation
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Tech Stack
 
-## Project setup
+- **Framework**: NestJS 10.x
+- **Database**: PostgreSQL with TypeORM
+- **Validation**: class-validator, class-transformer
+- **Documentation**: Swagger/OpenAPI
+- **Language**: TypeScript
 
-```bash
-$ npm install
+## Installation
+
+### Prerequisites
+
+- Node.js 18+
+- PostgreSQL 13+
+- npm or yarn
+
+### Setup
+
+1. **Clone repository**
+
+   ```bash
+   git clone https://github.com/caleb-vanlue/discogs-api.git
+   cd discogs-api
+   ```
+
+2. **Install dependencies**
+
+   ```bash
+   npm install
+   ```
+
+3. **Configure environment**
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Required environment variables:
+
+   ```bash
+   # API Security
+   API_KEY=your-generated-api-key
+
+   # Database
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_USERNAME=postgres
+   DB_PASSWORD=your_password
+   DB_NAME=discogs
+
+   # Discogs Integration
+   DISCOGS_USERNAME=your_discogs_username
+   DISCOGS_API_TOKEN=your_discogs_token
+
+   # Application
+   PORT=3000
+   NODE_ENV=development
+   ```
+
+4. **Database setup**
+
+   ```bash
+   createdb discogs
+   npm run migration:run
+   ```
+
+5. **Start application**
+
+   ```bash
+   # Development
+   npm run start:dev
+
+   # Production
+   npm run build
+   npm run start:prod
+   ```
+
+## API Documentation
+
+### Base URL
+
+```
+http://localhost:3000
 ```
 
-## Compile and run the project
+### Authentication
+
+All endpoints require API key authentication via one of:
+
+- Header: `X-API-Key: your-api-key`
+- Header: `Authorization: Bearer your-api-key`
+
+### Interactive Documentation
+
+Access Swagger UI at `http://localhost:3000/api` for complete API documentation with request/response examples.
+
+### Core Endpoints
+
+#### Collections
+
+- `GET /collection/{userId}` - Retrieve user collection with sorting and pagination
+- `POST /collection/{userId}/collection` - Add release to collection
+- `DELETE /collection/{userId}/collection/{releaseId}` - Remove from collection
+- `GET /collection/{userId}/stats` - Collection statistics
+
+#### Wantlists
+
+- `GET /collection/{userId}/wantlist` - Retrieve user wantlist
+- `POST /collection/{userId}/wantlist` - Add release to wantlist
+- `DELETE /collection/{userId}/wantlist/{releaseId}` - Remove from wantlist
+
+#### Releases
+
+- `GET /releases` - Browse all releases with sorting and pagination
+- `GET /releases/{discogsId}` - Get specific release by Discogs ID
+
+### Query Parameters
+
+**Pagination**
+
+- `limit`: Items per page (1-100, default: 50)
+- `offset`: Items to skip (default: 0)
+
+**Sorting**
+
+- `sort_by`: Field to sort by
+  - Collections: `dateAdded`, `title`, `primaryArtist`, `year`, `rating`, `primaryGenre`, `primaryFormat`
+  - Wantlists: `dateAdded`, `title`, `primaryArtist`, `year`, `primaryGenre`, `primaryFormat`
+- `sort_order`: `ASC` or `DESC` (default: `DESC`)
+
+### Example Requests
+
+**Get collection with sorting**
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+curl -H "X-API-Key: your-key" \
+  "http://localhost:3000/collection/username?limit=25&sort_by=title&sort_order=ASC"
 ```
 
-## Run tests
+**Add to collection**
 
 ```bash
-# unit tests
-$ npm run test
+curl -X POST -H "X-API-Key: your-key" -H "Content-Type: application/json" \
+  -d '{"releaseId": 123456, "rating": 5, "notes": "Signed copy"}' \
+  "http://localhost:3000/collection/username/collection"
+```
 
-# e2e tests
-$ npm run test:e2e
+## Development
 
-# test coverage
-$ npm run test:cov
+### Database Operations
+
+**Create migration**
+
+```bash
+npm run migration:generate -- --name=MigrationName
+```
+
+**Run migrations**
+
+```bash
+npm run migration:run
+```
+
+**Revert migration**
+
+```bash
+npm run migration:revert
 ```
 
 ## Deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+### Environment-Specific Configuration
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- Use separate `.env` files for different environments
+- Validate configuration for each deployment target
+- Ensure API keys are securely managed in production
