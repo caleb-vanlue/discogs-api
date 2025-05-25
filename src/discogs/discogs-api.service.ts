@@ -16,12 +16,11 @@ export class DiscogsApiService {
 
   constructor(
     private readonly httpService: HttpService,
-    private readonly configService: ConfigService,
     private readonly discogsConfig: DiscogsConfig,
   ) {}
 
   private get discogsToken(): string {
-    const token = this.configService.get<string>('DISCOGS_TOKEN');
+    const token = this.discogsConfig.apiToken;
     if (!token) {
       throw new HttpException(
         'Discogs token not configured',
