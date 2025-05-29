@@ -39,6 +39,13 @@ describe('CollectionController', () => {
     })
       .overrideGuard(ApiKeyGuard)
       .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .setLogger({
+        log: () => {},
+        error: () => {},
+        warn: () => {},
+        debug: () => {},
+        verbose: () => {},
+      })
       .compile();
 
     controller = module.get<CollectionController>(CollectionController);

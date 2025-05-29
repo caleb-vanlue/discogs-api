@@ -50,7 +50,15 @@ describe('CollectionService', () => {
           useValue: mockWantlistRepo,
         },
       ],
-    }).compile();
+    })
+      .setLogger({
+        log: () => {},
+        error: () => {},
+        warn: () => {},
+        debug: () => {},
+        verbose: () => {},
+      })
+      .compile();
 
     service = module.get<CollectionService>(CollectionService);
     collectionRepo = module.get<UserCollectionRepository>(
