@@ -59,10 +59,7 @@ describe('SyncSchedulerService', () => {
     configService = module.get<ConfigService>(ConfigService);
     discogsConfig = module.get<DiscogsConfig>(DiscogsConfig);
 
-    // Reset all mocks
     jest.clearAllMocks();
-
-    // Default config values
     mockConfigService.get.mockImplementation(
       (key: string, defaultValue?: string) => {
         const values: Record<string, string> = {
@@ -84,13 +81,11 @@ describe('SyncSchedulerService', () => {
 
   describe('onModuleInit', () => {
     beforeEach(() => {
-      // Mock setTimeout to resolve immediately
       jest.spyOn(global, 'setTimeout').mockImplementation((callback: any) => {
         callback();
         return {} as any;
       });
 
-      // Mock performFullSync to avoid actual sync calls
       jest
         .spyOn(service as any, 'performFullSync')
         .mockResolvedValue(mockSyncResult);
@@ -225,7 +220,6 @@ describe('SyncSchedulerService', () => {
     });
 
     it('should perform full sync successfully', async () => {
-      // Mock Date.now() for this specific test
       const mockNow = jest.spyOn(Date, 'now');
       mockNow
         .mockReturnValueOnce(1000000) // Start time
@@ -328,7 +322,6 @@ describe('SyncSchedulerService', () => {
     });
 
     it('should calculate duration correctly for short syncs', async () => {
-      // Mock for a 30-second sync
       const mockNow = jest.spyOn(Date, 'now');
       mockNow
         .mockReturnValueOnce(2000000) // Start time
@@ -341,7 +334,6 @@ describe('SyncSchedulerService', () => {
     });
 
     it('should calculate duration correctly for long syncs', async () => {
-      // Mock for a 5-minute sync
       const mockNow = jest.spyOn(Date, 'now');
       mockNow
         .mockReturnValueOnce(3000000) // Start time
@@ -354,7 +346,6 @@ describe('SyncSchedulerService', () => {
     });
 
     it('should round duration to 2 decimal places', async () => {
-      // Mock for 33.333... seconds (0.55555... minutes)
       const mockNow = jest.spyOn(Date, 'now');
       mockNow
         .mockReturnValueOnce(4000000) // Start time
@@ -386,7 +377,6 @@ describe('SyncSchedulerService', () => {
       mockNow.mockReturnValue(1000000);
       mockDiscogsSyncService.syncAll.mockResolvedValue(undefined);
 
-      // The service will throw when trying to access result.collection
       await expect(service['performFullSync']('test')).rejects.toMatchObject({
         success: false,
         trigger: 'test',
@@ -405,7 +395,6 @@ describe('SyncSchedulerService', () => {
       };
       mockDiscogsSyncService.syncAll.mockResolvedValue(malformedResult as any);
 
-      // The service will try to access properties and may throw
       await expect(service['performFullSync']('test')).rejects.toMatchObject({
         success: false,
         trigger: 'test',
@@ -448,7 +437,6 @@ describe('SyncSchedulerService', () => {
       await service.onModuleInit();
       await service.handleDailySync();
 
-      // Both 'TRUE' and 'False' are not exactly 'true', so both syncs should be disabled
       expect(logSpy).toHaveBeenCalledWith(
         'Startup sync disabled via SYNC_ON_STARTUP=false',
       );
@@ -456,7 +444,6 @@ describe('SyncSchedulerService', () => {
         'Daily sync disabled via CRON_SYNC_ENABLED=false',
       );
 
-      // performFullSync should not have been called at all
       expect(service['performFullSync']).not.toHaveBeenCalled();
     });
 
@@ -472,7 +459,6 @@ describe('SyncSchedulerService', () => {
 
       await service.onModuleInit();
 
-      // Empty string should be treated as falsy
       expect(logSpy).toHaveBeenCalledWith(
         'Startup sync disabled via SYNC_ON_STARTUP=false',
       );
@@ -481,7 +467,6 @@ describe('SyncSchedulerService', () => {
 
   describe('timing and performance', () => {
     beforeEach(() => {
-      // Reset sync service mock for timing tests
       mockDiscogsSyncService.syncAll.mockResolvedValue(mockSyncResult);
     });
 
@@ -505,7 +490,6 @@ describe('SyncSchedulerService', () => {
 
       const result = await service['performFullSync']('clock-adjustment');
 
-      // The service doesn't handle negative durations, so we get what we get
       expect(result.duration).toBe(-0.02); // -1000ms = -0.016... minutes, rounded to -0.02
       mockNow.mockRestore();
     });
