@@ -52,7 +52,15 @@ describe('SyncSchedulerService', () => {
           useValue: mockDiscogsConfig,
         },
       ],
-    }).compile();
+    })
+      .setLogger({
+        log: () => {},
+        error: () => {},
+        warn: () => {},
+        debug: () => {},
+        verbose: () => {},
+      })
+      .compile();
 
     service = module.get<SyncSchedulerService>(SyncSchedulerService);
     syncService = module.get<DiscogsSyncService>(DiscogsSyncService);

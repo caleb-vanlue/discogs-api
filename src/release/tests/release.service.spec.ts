@@ -36,7 +36,15 @@ describe('ReleaseService', () => {
           useValue: mockReleaseRepository,
         },
       ],
-    }).compile();
+    })
+      .setLogger({
+        log: () => {},
+        error: () => {},
+        warn: () => {},
+        debug: () => {},
+        verbose: () => {},
+      })
+      .compile();
 
     service = module.get<ReleaseService>(ReleaseService);
     releaseRepository = module.get<ReleaseRepository>(ReleaseRepository);

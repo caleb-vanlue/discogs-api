@@ -21,7 +21,15 @@ describe('ApiKeyGuard', () => {
           useValue: mockConfigService,
         },
       ],
-    }).compile();
+    })
+      .setLogger({
+        log: () => {},
+        error: () => {},
+        warn: () => {},
+        debug: () => {},
+        verbose: () => {},
+      })
+      .compile();
 
     guard = module.get<ApiKeyGuard>(ApiKeyGuard);
     mockConfigService.get.mockReturnValue(validApiKey);

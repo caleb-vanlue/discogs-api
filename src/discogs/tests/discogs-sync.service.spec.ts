@@ -150,7 +150,15 @@ describe('DiscogsSyncService', () => {
           useValue: mockDiscogsConfig,
         },
       ],
-    }).compile();
+    })
+      .setLogger({
+        log: () => {},
+        error: () => {},
+        warn: () => {},
+        debug: () => {},
+        verbose: () => {},
+      })
+      .compile();
 
     service = module.get<DiscogsSyncService>(DiscogsSyncService);
     discogsApiService = module.get<DiscogsApiService>(DiscogsApiService);
@@ -163,7 +171,6 @@ describe('DiscogsSyncService', () => {
     );
     discogsConfig = module.get<DiscogsConfig>(DiscogsConfig);
 
-    // Mock ReleaseDataExtractor static method
     jest
       .spyOn(ReleaseDataExtractor, 'copyReleaseDataForSorting')
       .mockReturnValue(mockReleaseDataForSorting);
@@ -705,7 +712,6 @@ describe('DiscogsSyncService', () => {
     it('should run collection and wantlist sync in parallel', async () => {
       const startTime = Date.now();
 
-      // Make the methods take some time to ensure they run in parallel
       jest
         .spyOn(service, 'syncUserCollection')
         .mockImplementation(
@@ -727,7 +733,6 @@ describe('DiscogsSyncService', () => {
 
       const endTime = Date.now();
 
-      // If they ran in parallel, total time should be less than sequential (200ms)
       expect(endTime - startTime).toBeLessThan(150);
     });
 
@@ -834,7 +839,6 @@ describe('DiscogsSyncService', () => {
     it('should run stats queries in parallel', async () => {
       const startTime = Date.now();
 
-      // Make the methods take some time to ensure they run in parallel
       mockCollectionRepository.getCollectionStats.mockImplementation(
         () =>
           new Promise((resolve) =>
@@ -852,7 +856,6 @@ describe('DiscogsSyncService', () => {
 
       const endTime = Date.now();
 
-      // If they ran in parallel, total time should be less than sequential (100ms)
       expect(endTime - startTime).toBeLessThan(80);
     });
 

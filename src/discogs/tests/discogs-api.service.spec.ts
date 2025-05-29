@@ -80,7 +80,15 @@ describe('DiscogsApiService', () => {
           useValue: mockDiscogsConfig,
         },
       ],
-    }).compile();
+    })
+      .setLogger({
+        log: () => {},
+        error: () => {},
+        warn: () => {},
+        debug: () => {},
+        verbose: () => {},
+      })
+      .compile();
 
     service = module.get<DiscogsApiService>(DiscogsApiService);
     httpService = module.get<HttpService>(HttpService);
@@ -111,7 +119,15 @@ describe('DiscogsApiService', () => {
             useValue: configWithoutToken,
           },
         ],
-      }).compile();
+      })
+        .setLogger({
+          log: () => {},
+          error: () => {},
+          warn: () => {},
+          debug: () => {},
+          verbose: () => {},
+        })
+        .compile();
 
       const serviceWithoutToken =
         moduleWithoutToken.get<DiscogsApiService>(DiscogsApiService);
