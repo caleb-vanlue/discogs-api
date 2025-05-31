@@ -1,0 +1,66 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  unit-tests:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          Write-Host "Installing dependencies..."
+          npm ci
+        shell: powershell
+
+      - name: Run unit tests
+        run: |
+          Write-Host "Running unit tests..."
+          npm run test
+        shell: powershell
+        env:
+          LOG_LEVEL: silent
+          NODE_ENV: test
+
+      - name: Run test coverage
+        run: |
+          Write-Host "Running test coverage..."
+          npm run test:cov
+        shell: powershell
+        env:
+          LOG_LEVEL: silent
+          NODE_ENV: test
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+      - name: Display test results
+        if: always()
+        run: |
+          Write-Host "Test execution completed"
+          if (Test-Path "coverage/lcov-report/index.html") {
+            Write-Host "Coverage report generated successfully"
+          } else {
+            Write-Host "Coverage report not found"
+          }
+        shell: powershell
