@@ -3,7 +3,6 @@ import { DiscogsController } from '../discogs.controller';
 import { DiscogsApiService } from '../discogs-api.service';
 import { DiscogsSyncService } from '../discogs-sync.service';
 import { ApiKeyGuard } from '../../common/guards/api-key.guard';
-import { DiscogsQueryParams } from '../types/discogs.types';
 
 describe('DiscogsController', () => {
   let controller: DiscogsController;
@@ -11,6 +10,8 @@ describe('DiscogsController', () => {
   const mockDiscogsApiService = {
     getCollection: jest.fn(),
     getWantlist: jest.fn(),
+    searchReleases: jest.fn(),
+    addToFolder: jest.fn(),
   };
 
   const mockDiscogsSyncService = {
@@ -485,6 +486,198 @@ describe('DiscogsController', () => {
 
       expect(result.status).toBe('error');
       expect(result.error).toBe('API Error');
+    });
+  });
+
+  describe('searchReleases', () => {
+    const mockSearchResponse = {
+      results: [
+        {
+          id: 12345,
+          title: 'Test Album',
+          artist: 'Test Artist',
+          year: 2023,
+          thumb: 'https://example.com/thumb.jpg',
+          cover_image: 'https://example.com/cover.jpg',
+          format: ['CD', 'Album'],
+          resource_url: 'https://api.discogs.com/releases/12345',
+        },
+      ],
+      pagination: {
+        page: 1,
+        pages: 5,
+        per_page: 50,
+        items: 250,
+      },
+    };
+
+    it('should search releases with required query parameter', async () => {
+      mockDiscogsApiService.searchReleases.mockResolvedValue(
+        mockSearchResponse,
+      );
+
+      const searchDto = { query: 'Pink Floyd', page: 1, per_page: 50 };
+      const result = await controller.searchReleases(searchDto);
+
+      expect(result).toEqual(mockSearchResponse);
+      expect(mockDiscogsApiService.searchReleases).toHaveBeenCalledWith(
+        'Pink Floyd',
+        1,
+        50,
+      );
+    });
+
+    it('should search releases with custom pagination', async () => {
+      mockDiscogsApiService.searchReleases.mockResolvedValue(
+        mockSearchResponse,
+      );
+
+      const searchDto = { query: 'Beatles', page: 2, per_page: 25 };
+      const result = await controller.searchReleases(searchDto);
+
+      expect(result).toEqual(mockSearchResponse);
+      expect(mockDiscogsApiService.searchReleases).toHaveBeenCalledWith(
+        'Beatles',
+        2,
+        25,
+      );
+    });
+
+    it('should use default pagination when not provided', async () => {
+      mockDiscogsApiService.searchReleases.mockResolvedValue(
+        mockSearchResponse,
+      );
+
+      const searchDto = { query: 'Led Zeppelin' };
+      const result = await controller.searchReleases(searchDto);
+
+      expect(result).toEqual(mockSearchResponse);
+      expect(mockDiscogsApiService.searchReleases).toHaveBeenCalledWith(
+        'Led Zeppelin',
+        undefined,
+        undefined,
+      );
+    });
+
+    it('should return empty results when no matches found', async () => {
+      const emptyResponse = {
+        results: [],
+        pagination: {
+          page: 1,
+          pages: 0,
+          per_page: 50,
+          items: 0,
+        },
+      };
+      mockDiscogsApiService.searchReleases.mockResolvedValue(emptyResponse);
+
+      const searchDto = { query: 'NonexistentAlbum123' };
+      const result = await controller.searchReleases(searchDto);
+
+      expect(result).toEqual(emptyResponse);
+    });
+
+    it('should log search request', async () => {
+      const logSpy = jest.spyOn(controller['logger'], 'log');
+      mockDiscogsApiService.searchReleases.mockResolvedValue(
+        mockSearchResponse,
+      );
+
+      const searchDto = { query: 'Test Query' };
+      await controller.searchReleases(searchDto);
+
+      expect(logSpy).toHaveBeenCalledWith(
+        'Searching releases with query: Test Query',
+      );
+    });
+
+    it('should handle service errors', async () => {
+      const error = new Error('Search API error');
+      mockDiscogsApiService.searchReleases.mockRejectedValue(error);
+
+      const searchDto = { query: 'Error Test' };
+      await expect(controller.searchReleases(searchDto)).rejects.toThrow(error);
+    });
+  });
+
+  describe('suggestRelease', () => {
+    it('should successfully suggest a release', async () => {
+      const mockAddResult = { instance_id: 999999 };
+      mockDiscogsApiService.addToFolder.mockResolvedValue(mockAddResult);
+
+      const suggestDto = { releaseId: 12345 };
+      const result = await controller.suggestRelease(suggestDto);
+
+      expect(result).toEqual({
+        success: true,
+        message: 'Release 12345 successfully added to suggestions',
+        instance_id: 999999,
+      });
+      expect(mockDiscogsApiService.addToFolder).toHaveBeenCalledWith(12345);
+    });
+
+    it('should handle already existing release', async () => {
+      const conflictError = new Error('Release already exists');
+      (conflictError as any).status = 409;
+      mockDiscogsApiService.addToFolder.mockRejectedValue(conflictError);
+
+      const suggestDto = { releaseId: 12345 };
+      const result = await controller.suggestRelease(suggestDto);
+
+      expect(result).toEqual({
+        success: false,
+        message: 'Release already exists in suggestion folder',
+      });
+    });
+
+    it('should suggest release with notes (for future implementation)', async () => {
+      const mockAddResult = { instance_id: 888888 };
+      mockDiscogsApiService.addToFolder.mockResolvedValue(mockAddResult);
+
+      const suggestDto = {
+        releaseId: 67890,
+        notes: 'Great album recommendation!',
+      };
+      const result = await controller.suggestRelease(suggestDto);
+
+      expect(result).toEqual({
+        success: true,
+        message: 'Release 67890 successfully added to suggestions',
+        instance_id: 888888,
+      });
+      expect(mockDiscogsApiService.addToFolder).toHaveBeenCalledWith(67890);
+    });
+
+    it('should log suggest request', async () => {
+      const logSpy = jest.spyOn(controller['logger'], 'log');
+      const mockAddResult = { instance_id: 777777 };
+      mockDiscogsApiService.addToFolder.mockResolvedValue(mockAddResult);
+
+      const suggestDto = { releaseId: 11111 };
+      await controller.suggestRelease(suggestDto);
+
+      expect(logSpy).toHaveBeenCalledWith('Suggesting release: 11111');
+    });
+
+    it('should propagate non-409 errors', async () => {
+      const error = new Error('API Error');
+      (error as any).status = 500;
+      mockDiscogsApiService.addToFolder.mockRejectedValue(error);
+
+      const suggestDto = { releaseId: 99999 };
+      await expect(controller.suggestRelease(suggestDto)).rejects.toThrow(
+        error,
+      );
+    });
+
+    it('should handle unexpected errors', async () => {
+      const error = new Error('Network error');
+      mockDiscogsApiService.addToFolder.mockRejectedValue(error);
+
+      const suggestDto = { releaseId: 55555 };
+      await expect(controller.suggestRelease(suggestDto)).rejects.toThrow(
+        error,
+      );
     });
   });
 
