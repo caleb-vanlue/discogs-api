@@ -25,6 +25,7 @@ describe('DiscogsApiService', () => {
 
   const mockHttpService = {
     get: jest.fn(),
+    post: jest.fn(),
   };
 
   const mockBasicInformation: BasicInformation = {
@@ -586,6 +587,256 @@ describe('DiscogsApiService', () => {
 
       expect(errorSpy).toHaveBeenCalledWith(
         'Error fetching wantlist from Discogs:',
+        error,
+      );
+    });
+  });
+
+  describe('searchReleases', () => {
+    const mockSearchResponse = {
+      results: [
+        {
+          id: 12345,
+          title: 'Test Album',
+          artist: 'Test Artist',
+          year: 2023,
+          thumb: 'https://example.com/thumb.jpg',
+          cover_image: 'https://example.com/cover.jpg',
+          format: ['CD', 'Album'],
+          resource_url: 'https://api.discogs.com/releases/12345',
+        },
+      ],
+      pagination: {
+        page: 1,
+        pages: 5,
+        per_page: 50,
+        items: 250,
+      },
+    };
+
+    it('should search releases successfully', async () => {
+      mockHttpService.get.mockReturnValue(of({ data: mockSearchResponse }));
+
+      const result = await service.searchReleases('Pink Floyd');
+
+      expect(result).toEqual(mockSearchResponse);
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        'https://api.discogs.com/database/search',
+        {
+          headers: {
+            Authorization: 'Discogs token=test-token-123',
+            'User-Agent': 'NestJSDiscogsService/1.0',
+          },
+          params: {
+            q: 'Pink Floyd',
+            type: 'release',
+            page: 1,
+            per_page: 50,
+          },
+        },
+      );
+    });
+
+    it('should search with custom pagination', async () => {
+      mockHttpService.get.mockReturnValue(of({ data: mockSearchResponse }));
+
+      await service.searchReleases('Beatles', 2, 25);
+
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        'https://api.discogs.com/database/search',
+        {
+          headers: {
+            Authorization: 'Discogs token=test-token-123',
+            'User-Agent': 'NestJSDiscogsService/1.0',
+          },
+          params: {
+            q: 'Beatles',
+            type: 'release',
+            page: 2,
+            per_page: 25,
+          },
+        },
+      );
+    });
+
+    it('should return empty results on 404', async () => {
+      const error = {
+        response: {
+          status: 404,
+        },
+      };
+      mockHttpService.get.mockReturnValue(throwError(() => error));
+
+      const result = await service.searchReleases('NonexistentAlbum');
+
+      expect(result).toEqual({
+        results: [],
+        pagination: {
+          page: 1,
+          pages: 0,
+          per_page: 50,
+          items: 0,
+        },
+      });
+    });
+
+    it('should handle API errors', async () => {
+      const error = {
+        response: {
+          status: 401,
+        },
+      };
+      mockHttpService.get.mockReturnValue(throwError(() => error));
+
+      await expect(service.searchReleases('Test')).rejects.toThrow(
+        new HttpException('Discogs API error: 401', 401),
+      );
+    });
+
+    it('should handle network errors', async () => {
+      const error = new Error('Network error');
+      mockHttpService.get.mockReturnValue(throwError(() => error));
+
+      await expect(service.searchReleases('Test')).rejects.toThrow(
+        new HttpException(
+          'Failed to search releases',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        ),
+      );
+    });
+
+    it('should log search operations', async () => {
+      const debugSpy = jest.spyOn(service['logger'], 'debug');
+      const logSpy = jest.spyOn(service['logger'], 'log');
+      mockHttpService.get.mockReturnValue(of({ data: mockSearchResponse }));
+
+      await service.searchReleases('Test Query');
+
+      expect(debugSpy).toHaveBeenCalledWith(
+        'Searching releases with query: Test Query',
+      );
+      expect(logSpy).toHaveBeenCalledWith(
+        'Search returned 1 results for query: Test Query',
+      );
+    });
+
+    it('should log errors on search failure', async () => {
+      const errorSpy = jest.spyOn(service['logger'], 'error');
+      const error = new Error('Search failed');
+      mockHttpService.get.mockReturnValue(throwError(() => error));
+
+      await expect(service.searchReleases('Test')).rejects.toThrow();
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Error searching releases on Discogs:',
+        error,
+      );
+    });
+  });
+
+  describe('addToFolder', () => {
+    const mockAddResponse = { instance_id: 999999 };
+
+    it('should add release to folder successfully', async () => {
+      mockHttpService.post.mockReturnValue(of({ data: mockAddResponse }));
+
+      const result = await service.addToFolder(12345);
+
+      expect(result).toEqual(mockAddResponse);
+      expect(mockHttpService.post).toHaveBeenCalledWith(
+        'https://api.discogs.com/users/test-user/collection/folders/8797697/releases/12345',
+        {},
+        {
+          headers: {
+            Authorization: 'Discogs token=test-token-123',
+            'User-Agent': 'NestJSDiscogsService/1.0',
+          },
+        },
+      );
+    });
+
+    it('should add release to custom folder', async () => {
+      mockHttpService.post.mockReturnValue(of({ data: mockAddResponse }));
+
+      await service.addToFolder(67890, 123);
+
+      expect(mockHttpService.post).toHaveBeenCalledWith(
+        'https://api.discogs.com/users/test-user/collection/folders/123/releases/67890',
+        {},
+        {
+          headers: {
+            Authorization: 'Discogs token=test-token-123',
+            'User-Agent': 'NestJSDiscogsService/1.0',
+          },
+        },
+      );
+    });
+
+    it('should handle conflict error (release already exists)', async () => {
+      const error = {
+        response: {
+          status: 403,
+        },
+      };
+      mockHttpService.post.mockReturnValue(throwError(() => error));
+
+      await expect(service.addToFolder(12345)).rejects.toThrow(
+        new HttpException(
+          'Release already exists in folder',
+          HttpStatus.CONFLICT,
+        ),
+      );
+    });
+
+    it('should handle other API errors', async () => {
+      const error = {
+        response: {
+          status: 401,
+        },
+      };
+      mockHttpService.post.mockReturnValue(throwError(() => error));
+
+      await expect(service.addToFolder(12345)).rejects.toThrow(
+        new HttpException('Discogs API error: 401', 401),
+      );
+    });
+
+    it('should handle network errors', async () => {
+      const error = new Error('Network error');
+      mockHttpService.post.mockReturnValue(throwError(() => error));
+
+      await expect(service.addToFolder(12345)).rejects.toThrow(
+        new HttpException(
+          'Failed to add release to folder',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        ),
+      );
+    });
+
+    it('should log add operations', async () => {
+      const debugSpy = jest.spyOn(service['logger'], 'debug');
+      const logSpy = jest.spyOn(service['logger'], 'log');
+      mockHttpService.post.mockReturnValue(of({ data: mockAddResponse }));
+
+      await service.addToFolder(12345);
+
+      expect(debugSpy).toHaveBeenCalledWith(
+        'Adding release 12345 to folder 8797697',
+      );
+      expect(logSpy).toHaveBeenCalledWith(
+        'Successfully added release 12345 to folder 8797697',
+      );
+    });
+
+    it('should log errors on add failure', async () => {
+      const errorSpy = jest.spyOn(service['logger'], 'error');
+      const error = new Error('Add failed');
+      mockHttpService.post.mockReturnValue(throwError(() => error));
+
+      await expect(service.addToFolder(12345)).rejects.toThrow();
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Error adding release to folder:',
         error,
       );
     });

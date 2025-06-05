@@ -4,6 +4,7 @@ import {
   Post,
   Param,
   Query,
+  Body,
   Logger,
   UseGuards,
 } from '@nestjs/common';
@@ -13,11 +14,20 @@ import {
   ApiParam,
   ApiQuery,
   ApiSecurity,
+  ApiResponse,
 } from '@nestjs/swagger';
 import { DiscogsApiService } from './discogs-api.service';
 import { DiscogsSyncService } from './discogs-sync.service';
 import { DiscogsQueryParams } from './types/discogs.types';
 import { ApiKeyGuard } from '../common/guards/api-key.guard';
+import {
+  SearchReleasesDto,
+  SearchReleasesResponse,
+} from './dto/search-releases.dto';
+import {
+  SuggestReleaseDto,
+  SuggestReleaseResponse,
+} from './dto/suggest-release.dto';
 
 @ApiTags('discogs')
 @ApiSecurity('api-key')
@@ -195,6 +205,68 @@ export class DiscogsController {
         message: 'Discogs API connection failed',
         error: error.message,
       };
+    }
+  }
+
+  @Get('search')
+  @ApiOperation({
+    summary: 'Search Discogs releases',
+    description: 'Search for releases on Discogs by query string',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Search results',
+    type: SearchReleasesResponse,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid query parameters',
+  })
+  async searchReleases(@Query() searchDto: SearchReleasesDto) {
+    this.logger.log(`Searching releases with query: ${searchDto.query}`);
+
+    return this.discogsApi.searchReleases(
+      searchDto.query,
+      searchDto.page,
+      searchDto.per_page,
+    );
+  }
+
+  @Post('suggest')
+  @ApiOperation({
+    summary: 'Suggest a release',
+    description: 'Add a release to the suggestion folder (folder ID: 8797697)',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Release successfully suggested',
+    type: SuggestReleaseResponse,
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Release already exists in suggestion folder',
+  })
+  async suggestRelease(
+    @Body() suggestDto: SuggestReleaseDto,
+  ): Promise<SuggestReleaseResponse> {
+    this.logger.log(`Suggesting release: ${suggestDto.releaseId}`);
+
+    try {
+      const result = await this.discogsApi.addToFolder(suggestDto.releaseId);
+
+      return {
+        success: true,
+        message: `Release ${suggestDto.releaseId} successfully added to suggestions`,
+        instance_id: result.instance_id,
+      };
+    } catch (error) {
+      if (error.status === 409) {
+        return {
+          success: false,
+          message: 'Release already exists in suggestion folder',
+        };
+      }
+      throw error;
     }
   }
 }

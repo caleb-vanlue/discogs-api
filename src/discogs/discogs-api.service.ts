@@ -9,6 +9,7 @@ import {
   DiscogsRelease,
 } from './types/discogs.types';
 import { DiscogsConfig } from './discogs.config';
+import { SearchReleasesResponse } from './dto/search-releases.dto';
 
 @Injectable()
 export class DiscogsApiService {
@@ -172,5 +173,108 @@ export class DiscogsApiService {
 
     this.logger.log(`Fetched complete wantlist: ${allWants.length} wants`);
     return allWants;
+  }
+
+  async searchReleases(
+    query: string,
+    page: number = 1,
+    perPage: number = 50,
+  ): Promise<SearchReleasesResponse> {
+    try {
+      const url = `${this.discogsConfig.baseUrl}/database/search`;
+      const params = {
+        q: query,
+        type: 'release',
+        page,
+        per_page: perPage,
+      };
+
+      this.logger.debug(`Searching releases with query: ${query}`);
+
+      const response = await firstValueFrom(
+        this.httpService.get<SearchReleasesResponse>(url, {
+          headers: this.getRequestHeaders(),
+          params,
+        }),
+      );
+
+      this.logger.log(
+        `Search returned ${response.data.results.length} results for query: ${query}`,
+      );
+      return response.data;
+    } catch (error) {
+      this.logger.error('Error searching releases on Discogs:', error);
+
+      if (error.response?.status === 404) {
+        return {
+          results: [],
+          pagination: {
+            page,
+            pages: 0,
+            per_page: perPage,
+            items: 0,
+          },
+        };
+      }
+
+      if (error.response?.status) {
+        throw new HttpException(
+          `Discogs API error: ${error.response.status}`,
+          error.response.status,
+        );
+      }
+
+      throw new HttpException(
+        'Failed to search releases',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async addToFolder(
+    releaseId: number,
+    folderId: number = 8797697,
+  ): Promise<{ instance_id: number }> {
+    try {
+      const url = `${this.discogsConfig.baseUrl}/users/${this.discogsConfig.username}/collection/folders/${folderId}/releases/${releaseId}`;
+
+      this.logger.debug(`Adding release ${releaseId} to folder ${folderId}`);
+
+      const response = await firstValueFrom(
+        this.httpService.post<{ instance_id: number }>(
+          url,
+          {},
+          {
+            headers: this.getRequestHeaders(),
+          },
+        ),
+      );
+
+      this.logger.log(
+        `Successfully added release ${releaseId} to folder ${folderId}`,
+      );
+      return response.data;
+    } catch (error) {
+      this.logger.error('Error adding release to folder:', error);
+
+      if (error.response?.status === 403) {
+        throw new HttpException(
+          'Release already exists in folder',
+          HttpStatus.CONFLICT,
+        );
+      }
+
+      if (error.response?.status) {
+        throw new HttpException(
+          `Discogs API error: ${error.response.status}`,
+          error.response.status,
+        );
+      }
+
+      throw new HttpException(
+        'Failed to add release to folder',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }
