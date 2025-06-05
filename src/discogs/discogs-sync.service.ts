@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { DiscogsApiService } from './discogs-api.service';
 import { ReleaseRepository } from '../release/release.repository';
 import { DiscogsRelease } from './types/discogs.types';

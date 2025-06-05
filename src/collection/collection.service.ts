@@ -91,38 +91,6 @@ export class CollectionService {
     };
   }
 
-  async getUserSuggestions(
-    userId: string,
-    limit?: number,
-    offset?: number,
-    sortBy?: string,
-    sortOrder?: string,
-  ) {
-    const sortField = this.mapCollectionSortField(sortBy);
-    const order = this.mapSortOrder(sortOrder);
-
-    this.logger.log(
-      `Getting suggestions for user ${userId} - sort: ${sortField} ${order}`,
-    );
-
-    const [items, total] = await this.suggestionRepo.findByUserIdSorted(
-      userId,
-      limit || DEFAULT_LIMIT,
-      offset || DEFAULT_OFFSET,
-      sortField,
-      order,
-    );
-
-    return {
-      data: items,
-      total,
-      limit: limit || DEFAULT_LIMIT,
-      offset: offset || DEFAULT_OFFSET,
-      hasMore: (offset || 0) + items.length < total,
-      sortBy: sortField,
-      sortOrder: order,
-    };
-  }
 
   async getUserStats(userId: string) {
     const [collectionStats, wantlistStats, suggestionStats] = await Promise.all(
@@ -252,56 +220,6 @@ export class CollectionService {
     }
   }
 
-  async addToSuggestions(
-    userId: string,
-    data: { releaseId: number; notes?: string },
-  ) {
-    const existing = await this.suggestionRepo.findByUserAndRelease(
-      userId,
-      data.releaseId,
-    );
-
-    if (existing) {
-      throw new ConflictException('Release already in suggestions');
-    }
-
-    try {
-      return await this.suggestionRepo.addToSuggestions({
-        userId,
-        releaseId: data.releaseId,
-        notes: data.notes,
-        dateAdded: new Date(),
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to add release ${data.releaseId} to suggestions for user ${userId}`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  async removeFromSuggestions(userId: string, releaseId: number) {
-    const existing = await this.suggestionRepo.findByUserAndRelease(
-      userId,
-      releaseId,
-    );
-
-    if (!existing) {
-      throw new NotFoundException('Release not found in suggestions');
-    }
-
-    try {
-      await this.suggestionRepo.removeFromSuggestions(userId, releaseId);
-      return { message: 'Release removed from suggestions', releaseId };
-    } catch (error) {
-      this.logger.error(
-        `Failed to remove release ${releaseId} from suggestions for user ${userId}`,
-        error,
-      );
-      throw error;
-    }
-  }
 
   getCollectionSortOptions() {
     return this.collectionRepo.getAvailableSortOptions();
@@ -352,4 +270,5 @@ export class CollectionService {
     const order = sortOrder?.toLowerCase();
     return order === 'asc' || order === 'ascending' ? 'ASC' : 'DESC';
   }
+
 }

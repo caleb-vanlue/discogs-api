@@ -42,6 +42,7 @@ describe('CollectionService', () => {
     updateSuggestionItem: jest.fn(),
   };
 
+
   const mockUserId = 'test-user-123';
   const mockReleaseId = 12345;
 
@@ -656,120 +657,4 @@ describe('CollectionService', () => {
     });
   });
 
-  describe('getUserSuggestions', () => {
-    it('should return user suggestions with sorting and pagination', async () => {
-      const mockSuggestions = [
-        { id: 1, releaseId: mockReleaseId, userId: mockUserId },
-      ];
-      const mockTotal = 1;
-      mockSuggestionRepo.findByUserIdSorted.mockResolvedValue([
-        mockSuggestions,
-        mockTotal,
-      ]);
-
-      const result = await service.getUserSuggestions(
-        mockUserId,
-        10,
-        0,
-        'title',
-        'asc',
-      );
-
-      expect(result).toEqual({
-        data: mockSuggestions,
-        total: mockTotal,
-        limit: 10,
-        offset: 0,
-        hasMore: false,
-        sortBy: 'title',
-        sortOrder: 'ASC',
-      });
-
-      expect(mockSuggestionRepo.findByUserIdSorted).toHaveBeenCalledWith(
-        mockUserId,
-        10,
-        0,
-        'title',
-        'ASC',
-      );
-    });
-  });
-
-  describe('addToSuggestions', () => {
-    const addData = {
-      releaseId: mockReleaseId,
-      notes: 'Recommended by friend',
-    };
-
-    it('should add release to suggestions successfully', async () => {
-      const mockResponse = { id: 1, ...addData };
-      mockSuggestionRepo.findByUserAndRelease.mockResolvedValue(null);
-      mockSuggestionRepo.addToSuggestions.mockResolvedValue(mockResponse);
-
-      const result = await service.addToSuggestions(mockUserId, addData);
-
-      expect(result).toEqual(mockResponse);
-      expect(mockSuggestionRepo.findByUserAndRelease).toHaveBeenCalledWith(
-        mockUserId,
-        mockReleaseId,
-      );
-      expect(mockSuggestionRepo.addToSuggestions).toHaveBeenCalledWith({
-        userId: mockUserId,
-        releaseId: mockReleaseId,
-        notes: 'Recommended by friend',
-        dateAdded: expect.any(Date),
-      });
-    });
-
-    it('should throw ConflictException if release already in suggestions', async () => {
-      mockSuggestionRepo.findByUserAndRelease.mockResolvedValue({
-        id: 1,
-        releaseId: mockReleaseId,
-      });
-
-      await expect(
-        service.addToSuggestions(mockUserId, addData),
-      ).rejects.toThrow(ConflictException);
-
-      expect(mockSuggestionRepo.addToSuggestions).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('removeFromSuggestions', () => {
-    it('should remove release from suggestions successfully', async () => {
-      mockSuggestionRepo.findByUserAndRelease.mockResolvedValue({
-        id: 1,
-        releaseId: mockReleaseId,
-      });
-      mockSuggestionRepo.removeFromSuggestions.mockResolvedValue(undefined);
-
-      const result = await service.removeFromSuggestions(
-        mockUserId,
-        mockReleaseId,
-      );
-
-      expect(result).toEqual({
-        message: 'Release removed from suggestions',
-        releaseId: mockReleaseId,
-      });
-      expect(mockSuggestionRepo.findByUserAndRelease).toHaveBeenCalledWith(
-        mockUserId,
-        mockReleaseId,
-      );
-      expect(mockSuggestionRepo.removeFromSuggestions).toHaveBeenCalledWith(
-        mockUserId,
-        mockReleaseId,
-      );
-    });
-
-    it('should throw NotFoundException if release not in suggestions', async () => {
-      mockSuggestionRepo.findByUserAndRelease.mockResolvedValue(null);
-
-      await expect(
-        service.removeFromSuggestions(mockUserId, mockReleaseId),
-      ).rejects.toThrow(NotFoundException);
-
-      expect(mockSuggestionRepo.removeFromSuggestions).not.toHaveBeenCalled();
-    });
-  });
 });

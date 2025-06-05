@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { DiscogsController } from '../discogs.controller';
 import { DiscogsApiService } from '../discogs-api.service';
 import { DiscogsSyncService } from '../discogs-sync.service';
+import { SuggestionService } from '../suggestion.service';
 import { ApiKeyGuard } from '../../common/guards/api-key.guard';
 
 describe('DiscogsController', () => {
@@ -34,6 +35,10 @@ describe('DiscogsController', () => {
         {
           provide: DiscogsSyncService,
           useValue: mockDiscogsSyncService,
+        },
+        {
+          provide: SuggestionService,
+          useValue: {},
         },
       ],
     })
@@ -600,86 +605,6 @@ describe('DiscogsController', () => {
     });
   });
 
-  describe('suggestRelease', () => {
-    it('should successfully suggest a release', async () => {
-      const mockAddResult = { instance_id: 999999 };
-      mockDiscogsApiService.addToFolder.mockResolvedValue(mockAddResult);
-
-      const suggestDto = { releaseId: 12345 };
-      const result = await controller.suggestRelease(suggestDto);
-
-      expect(result).toEqual({
-        success: true,
-        message: 'Release 12345 successfully added to suggestions',
-        instance_id: 999999,
-      });
-      expect(mockDiscogsApiService.addToFolder).toHaveBeenCalledWith(12345);
-    });
-
-    it('should handle already existing release', async () => {
-      const conflictError = new Error('Release already exists');
-      (conflictError as any).status = 409;
-      mockDiscogsApiService.addToFolder.mockRejectedValue(conflictError);
-
-      const suggestDto = { releaseId: 12345 };
-      const result = await controller.suggestRelease(suggestDto);
-
-      expect(result).toEqual({
-        success: false,
-        message: 'Release already exists in suggestion folder',
-      });
-    });
-
-    it('should suggest release with notes (for future implementation)', async () => {
-      const mockAddResult = { instance_id: 888888 };
-      mockDiscogsApiService.addToFolder.mockResolvedValue(mockAddResult);
-
-      const suggestDto = {
-        releaseId: 67890,
-        notes: 'Great album recommendation!',
-      };
-      const result = await controller.suggestRelease(suggestDto);
-
-      expect(result).toEqual({
-        success: true,
-        message: 'Release 67890 successfully added to suggestions',
-        instance_id: 888888,
-      });
-      expect(mockDiscogsApiService.addToFolder).toHaveBeenCalledWith(67890);
-    });
-
-    it('should log suggest request', async () => {
-      const logSpy = jest.spyOn(controller['logger'], 'log');
-      const mockAddResult = { instance_id: 777777 };
-      mockDiscogsApiService.addToFolder.mockResolvedValue(mockAddResult);
-
-      const suggestDto = { releaseId: 11111 };
-      await controller.suggestRelease(suggestDto);
-
-      expect(logSpy).toHaveBeenCalledWith('Suggesting release: 11111');
-    });
-
-    it('should propagate non-409 errors', async () => {
-      const error = new Error('API Error');
-      (error as any).status = 500;
-      mockDiscogsApiService.addToFolder.mockRejectedValue(error);
-
-      const suggestDto = { releaseId: 99999 };
-      await expect(controller.suggestRelease(suggestDto)).rejects.toThrow(
-        error,
-      );
-    });
-
-    it('should handle unexpected errors', async () => {
-      const error = new Error('Network error');
-      mockDiscogsApiService.addToFolder.mockRejectedValue(error);
-
-      const suggestDto = { releaseId: 55555 };
-      await expect(controller.suggestRelease(suggestDto)).rejects.toThrow(
-        error,
-      );
-    });
-  });
 
   describe('ApiKeyGuard', () => {
     it('should have ApiKeyGuard applied to controller', () => {

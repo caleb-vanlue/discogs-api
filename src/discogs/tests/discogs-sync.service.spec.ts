@@ -193,22 +193,28 @@ describe('DiscogsSyncService', () => {
       .mockReturnValue(mockReleaseDataForSorting);
 
     // Set up default mock return values
-    mockDiscogsApiService.getAllCollection.mockResolvedValue([mockDiscogsRelease]);
-    mockDiscogsApiService.getAllWantlist.mockResolvedValue([mockDiscogsRelease]);
-    mockDiscogsApiService.getAllSuggestions.mockResolvedValue([mockDiscogsRelease]);
-    
+    mockDiscogsApiService.getAllCollection.mockResolvedValue([
+      mockDiscogsRelease,
+    ]);
+    mockDiscogsApiService.getAllWantlist.mockResolvedValue([
+      mockDiscogsRelease,
+    ]);
+    mockDiscogsApiService.getAllSuggestions.mockResolvedValue([
+      mockDiscogsRelease,
+    ]);
+
     mockReleaseRepository.upsertFromDiscogs.mockResolvedValue(mockRelease);
-    
+
     mockCollectionRepository.getCollectionStats.mockResolvedValue({
       totalItems: 1,
       ratedItems: 1,
       averageRating: 5,
     });
-    
+
     mockWantlistRepository.getWantlistStats.mockResolvedValue({
       totalItems: 1,
     });
-    
+
     mockSuggestionRepository.getSuggestionsStats.mockResolvedValue({
       totalItems: 1,
     });

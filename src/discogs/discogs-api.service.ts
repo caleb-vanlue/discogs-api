@@ -33,7 +33,7 @@ export class DiscogsApiService {
 
   private buildCollectionUrl(params: DiscogsQueryParams): string {
     const {
-      folder = '0',
+      folder = '1',
       sort = 'added',
       sortOrder = 'desc',
       page = 1,
@@ -126,10 +126,10 @@ export class DiscogsApiService {
     let page = 1;
     let totalPages = 1;
 
-    this.logger.log('Fetching entire collection...');
+    this.logger.log('Fetching entire collection from Uncategorized folder...');
 
     do {
-      const response = await this.getCollection({ page, perPage: 100 });
+      const response = await this.getCollection({ folder: '1', page, perPage: 100 });
       allReleases.push(...response.releases);
       totalPages = response.pagination.pages;
       page++;

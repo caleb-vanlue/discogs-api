@@ -2,10 +2,12 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Param,
   Query,
   Body,
   Logger,
+  ParseIntPipe,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -18,16 +20,15 @@ import {
 } from '@nestjs/swagger';
 import { DiscogsApiService } from './discogs-api.service';
 import { DiscogsSyncService } from './discogs-sync.service';
+import { SuggestionService } from './suggestion.service';
 import { DiscogsQueryParams } from './types/discogs.types';
 import { ApiKeyGuard } from '../common/guards/api-key.guard';
 import {
   SearchReleasesDto,
   SearchReleasesResponse,
 } from './dto/search-releases.dto';
-import {
-  SuggestReleaseDto,
-  SuggestReleaseResponse,
-} from './dto/suggest-release.dto';
+import { AddToSuggestionsDto } from '../collection/dto/add-to-suggestions.dto';
+import { CollectionQueryDto } from '../collection/dto/collection-query.dto';
 
 @ApiTags('discogs')
 @ApiSecurity('api-key')
@@ -39,6 +40,7 @@ export class DiscogsController {
   constructor(
     private readonly discogsApi: DiscogsApiService,
     private readonly discogsSyncService: DiscogsSyncService,
+    private readonly suggestionService: SuggestionService,
   ) {}
 
   @Get('collection')
@@ -232,41 +234,90 @@ export class DiscogsController {
     );
   }
 
-  @Post('suggest')
-  @ApiOperation({
-    summary: 'Suggest a release',
-    description: 'Add a release to the suggestion folder (folder ID: 8797697)',
+
+  @Get('suggestions/:userId')
+  @ApiOperation({ summary: 'Get user suggestions' })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'User suggestions retrieved successfully',
   })
   @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing API key',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  async getUserSuggestions(
+    @Param('userId') userId: string,
+    @Query() query: CollectionQueryDto,
+  ) {
+    this.logger.log(
+      `Getting suggestions for user ${userId} - sort: ${query.sort_by} ${query.sort_order}`,
+    );
+    return this.suggestionService.getUserSuggestions(
+      userId,
+      query.limit,
+      query.offset,
+      query.sort_by,
+      query.sort_order,
+    );
+  }
+
+  @Post('suggestions/:userId')
+  @ApiOperation({ summary: 'Add release to suggestions' })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiResponse({
     status: 201,
-    description: 'Release successfully suggested',
-    type: SuggestReleaseResponse,
+    description: 'Release added to suggestions successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing API key',
   })
   @ApiResponse({
     status: 409,
-    description: 'Release already exists in suggestion folder',
+    description: 'Release already in suggestions',
   })
-  async suggestRelease(
-    @Body() suggestDto: SuggestReleaseDto,
-  ): Promise<SuggestReleaseResponse> {
-    this.logger.log(`Suggesting release: ${suggestDto.releaseId}`);
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request data',
+  })
+  async addToSuggestions(
+    @Param('userId') userId: string,
+    @Body() data: AddToSuggestionsDto,
+  ) {
+    this.logger.log(
+      `Adding release ${data.releaseId} to suggestions for user ${userId}`,
+    );
+    return this.suggestionService.addToSuggestions(userId, data);
+  }
 
-    try {
-      const result = await this.discogsApi.addToFolder(suggestDto.releaseId);
-
-      return {
-        success: true,
-        message: `Release ${suggestDto.releaseId} successfully added to suggestions`,
-        instance_id: result.instance_id,
-      };
-    } catch (error) {
-      if (error.status === 409) {
-        return {
-          success: false,
-          message: 'Release already exists in suggestion folder',
-        };
-      }
-      throw error;
-    }
+  @Delete('suggestions/:userId/:releaseId')
+  @ApiOperation({ summary: 'Remove release from suggestions' })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiParam({ name: 'releaseId', description: 'Release ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Release removed from suggestions successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing API key',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Release not found in suggestions',
+  })
+  async removeFromSuggestions(
+    @Param('userId') userId: string,
+    @Param('releaseId', ParseIntPipe) releaseId: number,
+  ) {
+    this.logger.log(
+      `Removing release ${releaseId} from suggestions for user ${userId}`,
+    );
+    return this.suggestionService.removeFromSuggestions(userId, releaseId);
   }
 }

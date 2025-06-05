@@ -147,7 +147,7 @@ describe('DiscogsApiService', () => {
       const url = service['buildCollectionUrl'](params);
 
       expect(url).toBe(
-        'https://api.discogs.com/users/test-user/collection/folders/0/releases?sort=added&sort_order=desc&page=1&per_page=50',
+        'https://api.discogs.com/users/test-user/collection/folders/1/releases?sort=added&sort_order=desc&page=1&per_page=50',
       );
     });
 
@@ -235,7 +235,7 @@ describe('DiscogsApiService', () => {
 
       expect(result).toEqual(mockCollectionResponse);
       expect(mockHttpService.get).toHaveBeenCalledWith(
-        'https://api.discogs.com/users/test-user/collection/folders/0/releases?sort=added&sort_order=desc&page=1&per_page=50',
+        'https://api.discogs.com/users/test-user/collection/folders/1/releases?sort=added&sort_order=desc&page=1&per_page=50',
         {
           headers: {
             Authorization: 'Discogs token=test-token-123',
@@ -473,7 +473,7 @@ describe('DiscogsApiService', () => {
 
       await service.getAllCollection();
 
-      expect(logSpy).toHaveBeenCalledWith('Fetching entire collection...');
+      expect(logSpy).toHaveBeenCalledWith('Fetching entire collection from Uncategorized folder...');
       expect(logSpy).toHaveBeenCalledWith('Fetched page 1/1 (1 releases)');
       expect(logSpy).toHaveBeenCalledWith(
         'Fetched complete collection: 1 releases',
