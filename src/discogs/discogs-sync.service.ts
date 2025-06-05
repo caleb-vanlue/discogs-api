@@ -6,6 +6,7 @@ import { Release } from '../database/entities/release.entity';
 import { ReleaseDataExtractor } from '../database/helpers/release-data-extractor';
 import { UserCollectionRepository } from '../collection/repositories/user-collection.repository';
 import { UserWantlistRepository } from '../collection/repositories/user-wantlist.repository';
+import { UserSuggestionRepository } from '../collection/repositories/user-suggestion.repository';
 import { DiscogsConfig } from './discogs.config';
 
 @Injectable()
@@ -17,6 +18,7 @@ export class DiscogsSyncService {
     private readonly releaseRepo: ReleaseRepository,
     private readonly collectionRepo: UserCollectionRepository,
     private readonly wantlistRepo: UserWantlistRepository,
+    private readonly suggestionRepo: UserSuggestionRepository,
     private readonly discogsConfig: DiscogsConfig,
   ) {}
 
@@ -196,20 +198,95 @@ export class DiscogsSyncService {
     }
   }
 
+  async syncUserSuggestions(
+    userId: string = this.discogsConfig.username,
+  ): Promise<{
+    synced: number;
+    errors: number;
+    total: number;
+  }> {
+    this.logger.log(`Starting suggestions sync for user: ${userId}`);
+
+    try {
+      const discogsSuggestions = await this.discogsApi.getAllSuggestions();
+
+      let synced = 0;
+      let errors = 0;
+
+      for (const suggestionRelease of discogsSuggestions) {
+        try {
+          const release = await this.syncRelease(suggestionRelease);
+          const existing = await this.suggestionRepo.findByUserAndRelease(
+            userId,
+            release.id,
+          );
+
+          const releaseDataForSorting =
+            ReleaseDataExtractor.copyReleaseDataForSorting(release);
+
+          if (!existing) {
+            await this.suggestionRepo.addToSuggestions({
+              userId,
+              releaseId: release.id,
+              notes: this.processNotes(suggestionRelease.notes) || '',
+              dateAdded: suggestionRelease.date_added
+                ? new Date(suggestionRelease.date_added)
+                : new Date(),
+              ...releaseDataForSorting,
+            });
+
+            synced++;
+            this.logger.debug(`Synced suggestion: ${release.title}`);
+          } else {
+            await this.suggestionRepo.updateSuggestionItem(userId, release.id, {
+              notes: this.processNotes(suggestionRelease.notes) || '',
+              ...releaseDataForSorting,
+            });
+
+            synced++;
+            this.logger.debug(`Updated suggestion: ${release.title}`);
+          }
+        } catch (error) {
+          this.logger.error(
+            `Error syncing suggestion ${suggestionRelease.basic_information.title}:`,
+            error,
+          );
+          errors++;
+        }
+      }
+
+      const result = {
+        synced,
+        errors,
+        total: discogsSuggestions.length,
+      };
+
+      this.logger.log(`Suggestions sync completed: ${JSON.stringify(result)}`);
+      return result;
+    } catch (error) {
+      this.logger.error('Suggestions sync failed:', error);
+      throw error;
+    }
+  }
+
   async syncAll(userId: string = this.discogsConfig.username): Promise<{
     collection: { synced: number; errors: number; total: number };
     wantlist: { synced: number; errors: number; total: number };
+    suggestions: { synced: number; errors: number; total: number };
   }> {
     this.logger.log(`Starting full sync for user: ${userId}`);
 
-    const [collectionResult, wantlistResult] = await Promise.all([
-      this.syncUserCollection(userId),
-      this.syncUserWantlist(userId),
-    ]);
+    const [collectionResult, wantlistResult, suggestionsResult] =
+      await Promise.all([
+        this.syncUserCollection(userId),
+        this.syncUserWantlist(userId),
+        this.syncUserSuggestions(userId),
+      ]);
 
     const result = {
       collection: collectionResult,
       wantlist: wantlistResult,
+      suggestions: suggestionsResult,
     };
 
     this.logger.log(`Full sync completed: ${JSON.stringify(result)}`);
@@ -217,10 +294,13 @@ export class DiscogsSyncService {
   }
 
   async getSyncStatus(userId: string = this.discogsConfig.username) {
-    const [collectionStats, wantlistStats] = await Promise.all([
-      this.collectionRepo.getCollectionStats(userId),
-      this.wantlistRepo.getWantlistStats(userId),
-    ]);
+    const [collectionStats, wantlistStats, suggestionStats] = await Promise.all(
+      [
+        this.collectionRepo.getCollectionStats(userId),
+        this.wantlistRepo.getWantlistStats(userId),
+        this.suggestionRepo.getSuggestionsStats(userId),
+      ],
+    );
 
     return {
       userId,
@@ -233,8 +313,14 @@ export class DiscogsSyncService {
       wantlist: {
         totalItems: wantlistStats.totalItems,
       },
+      suggestions: {
+        totalItems: suggestionStats.totalItems,
+      },
       summary: {
-        totalSyncedItems: collectionStats.totalItems + wantlistStats.totalItems,
+        totalSyncedItems:
+          collectionStats.totalItems +
+          wantlistStats.totalItems +
+          suggestionStats.totalItems,
       },
     };
   }

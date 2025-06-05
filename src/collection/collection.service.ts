@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { UserWantlistRepository } from './repositories/user-wantlist.repository';
 import { UserCollectionRepository } from './repositories/user-collection.repository';
+import { UserSuggestionRepository } from './repositories/user-suggestion.repository';
 import {
   CollectionSortField,
   WantlistSortField,
@@ -21,6 +22,7 @@ export class CollectionService {
   constructor(
     private readonly collectionRepo: UserCollectionRepository,
     private readonly wantlistRepo: UserWantlistRepository,
+    private readonly suggestionRepo: UserSuggestionRepository,
   ) {}
 
   async getUserCollection(
@@ -89,19 +91,60 @@ export class CollectionService {
     };
   }
 
+  async getUserSuggestions(
+    userId: string,
+    limit?: number,
+    offset?: number,
+    sortBy?: string,
+    sortOrder?: string,
+  ) {
+    const sortField = this.mapCollectionSortField(sortBy);
+    const order = this.mapSortOrder(sortOrder);
+
+    this.logger.log(
+      `Getting suggestions for user ${userId} - sort: ${sortField} ${order}`,
+    );
+
+    const [items, total] = await this.suggestionRepo.findByUserIdSorted(
+      userId,
+      limit || DEFAULT_LIMIT,
+      offset || DEFAULT_OFFSET,
+      sortField,
+      order,
+    );
+
+    return {
+      data: items,
+      total,
+      limit: limit || DEFAULT_LIMIT,
+      offset: offset || DEFAULT_OFFSET,
+      hasMore: (offset || 0) + items.length < total,
+      sortBy: sortField,
+      sortOrder: order,
+    };
+  }
+
   async getUserStats(userId: string) {
-    const [collectionStats, wantlistStats] = await Promise.all([
-      this.collectionRepo.getCollectionStats(userId),
-      this.wantlistRepo.getWantlistStats(userId),
-    ]);
+    const [collectionStats, wantlistStats, suggestionStats] = await Promise.all(
+      [
+        this.collectionRepo.getCollectionStats(userId),
+        this.wantlistRepo.getWantlistStats(userId),
+        this.suggestionRepo.getSuggestionsStats(userId),
+      ],
+    );
 
     return {
       collection: collectionStats,
       wantlist: wantlistStats,
+      suggestions: suggestionStats,
       summary: {
-        totalItems: collectionStats.totalItems + wantlistStats.totalItems,
+        totalItems:
+          collectionStats.totalItems +
+          wantlistStats.totalItems +
+          suggestionStats.totalItems,
         collectionItems: collectionStats.totalItems,
         wantlistItems: wantlistStats.totalItems,
+        suggestionItems: suggestionStats.totalItems,
       },
     };
   }
@@ -203,6 +246,57 @@ export class CollectionService {
     } catch (error) {
       this.logger.error(
         `Failed to remove release ${releaseId} from wantlist for user ${userId}`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async addToSuggestions(
+    userId: string,
+    data: { releaseId: number; notes?: string },
+  ) {
+    const existing = await this.suggestionRepo.findByUserAndRelease(
+      userId,
+      data.releaseId,
+    );
+
+    if (existing) {
+      throw new ConflictException('Release already in suggestions');
+    }
+
+    try {
+      return await this.suggestionRepo.addToSuggestions({
+        userId,
+        releaseId: data.releaseId,
+        notes: data.notes,
+        dateAdded: new Date(),
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to add release ${data.releaseId} to suggestions for user ${userId}`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async removeFromSuggestions(userId: string, releaseId: number) {
+    const existing = await this.suggestionRepo.findByUserAndRelease(
+      userId,
+      releaseId,
+    );
+
+    if (!existing) {
+      throw new NotFoundException('Release not found in suggestions');
+    }
+
+    try {
+      await this.suggestionRepo.removeFromSuggestions(userId, releaseId);
+      return { message: 'Release removed from suggestions', releaseId };
+    } catch (error) {
+      this.logger.error(
+        `Failed to remove release ${releaseId} from suggestions for user ${userId}`,
         error,
       );
       throw error;

@@ -22,4 +22,3 @@ export class SuggestReleaseResponse {
   @ApiPropertyOptional({ description: 'Instance ID if successfully added' })
   instance_id?: number;
 }
-

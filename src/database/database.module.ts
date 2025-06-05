@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Release } from './entities/release.entity';
 import { UserCollection } from './entities/user-collection.entity';
 import { UserWantlist } from './entities/user-wantlist.entity';
+import { UserSuggestion } from './entities/user-suggestion.entity';
 import { createDatabaseConfig } from './database.config';
 
 @Module({
@@ -13,7 +14,12 @@ import { createDatabaseConfig } from './database.config';
       inject: [ConfigService],
       useFactory: createDatabaseConfig,
     }),
-    TypeOrmModule.forFeature([Release, UserCollection, UserWantlist]),
+    TypeOrmModule.forFeature([
+      Release,
+      UserCollection,
+      UserWantlist,
+      UserSuggestion,
+    ]),
   ],
   exports: [TypeOrmModule],
 })

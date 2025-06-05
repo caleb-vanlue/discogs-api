@@ -4,6 +4,7 @@ import { DiscogsApiService } from '../discogs-api.service';
 import { ReleaseRepository } from '../../release/release.repository';
 import { UserCollectionRepository } from '../../collection/repositories/user-collection.repository';
 import { UserWantlistRepository } from '../../collection/repositories/user-wantlist.repository';
+import { UserSuggestionRepository } from '../../collection/repositories/user-suggestion.repository';
 import { DiscogsConfig } from '../discogs.config';
 import { ReleaseDataExtractor } from '../../database/helpers/release-data-extractor';
 import { Release } from '../../database/entities/release.entity';
@@ -15,6 +16,7 @@ describe('DiscogsSyncService', () => {
   let releaseRepository: ReleaseRepository;
   let collectionRepository: UserCollectionRepository;
   let wantlistRepository: UserWantlistRepository;
+  let suggestionRepository: UserSuggestionRepository;
   let discogsConfig: DiscogsConfig;
 
   const mockDiscogsConfig = {
@@ -26,6 +28,7 @@ describe('DiscogsSyncService', () => {
   const mockDiscogsApiService = {
     getAllCollection: jest.fn(),
     getAllWantlist: jest.fn(),
+    getAllSuggestions: jest.fn(),
   };
 
   const mockReleaseRepository = {
@@ -44,6 +47,13 @@ describe('DiscogsSyncService', () => {
     addToWantlist: jest.fn(),
     updateWantlistItem: jest.fn(),
     getWantlistStats: jest.fn(),
+  };
+
+  const mockSuggestionRepository = {
+    findByUserAndRelease: jest.fn(),
+    addToSuggestions: jest.fn(),
+    updateSuggestionItem: jest.fn(),
+    getSuggestionsStats: jest.fn(),
   };
 
   const mockBasicInformation: BasicInformation = {
@@ -146,6 +156,10 @@ describe('DiscogsSyncService', () => {
           useValue: mockWantlistRepository,
         },
         {
+          provide: UserSuggestionRepository,
+          useValue: mockSuggestionRepository,
+        },
+        {
           provide: DiscogsConfig,
           useValue: mockDiscogsConfig,
         },
@@ -168,6 +182,9 @@ describe('DiscogsSyncService', () => {
     );
     wantlistRepository = module.get<UserWantlistRepository>(
       UserWantlistRepository,
+    );
+    suggestionRepository = module.get<UserSuggestionRepository>(
+      UserSuggestionRepository,
     );
     discogsConfig = module.get<DiscogsConfig>(DiscogsConfig);
 
