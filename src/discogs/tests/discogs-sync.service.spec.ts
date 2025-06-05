@@ -192,6 +192,27 @@ describe('DiscogsSyncService', () => {
       .spyOn(ReleaseDataExtractor, 'copyReleaseDataForSorting')
       .mockReturnValue(mockReleaseDataForSorting);
 
+    // Set up default mock return values
+    mockDiscogsApiService.getAllCollection.mockResolvedValue([mockDiscogsRelease]);
+    mockDiscogsApiService.getAllWantlist.mockResolvedValue([mockDiscogsRelease]);
+    mockDiscogsApiService.getAllSuggestions.mockResolvedValue([mockDiscogsRelease]);
+    
+    mockReleaseRepository.upsertFromDiscogs.mockResolvedValue(mockRelease);
+    
+    mockCollectionRepository.getCollectionStats.mockResolvedValue({
+      totalItems: 1,
+      ratedItems: 1,
+      averageRating: 5,
+    });
+    
+    mockWantlistRepository.getWantlistStats.mockResolvedValue({
+      totalItems: 1,
+    });
+    
+    mockSuggestionRepository.getSuggestionsStats.mockResolvedValue({
+      totalItems: 1,
+    });
+
     jest.clearAllMocks();
   });
 
@@ -702,6 +723,11 @@ describe('DiscogsSyncService', () => {
       expect(result).toEqual({
         collection: mockCollectionResult,
         wantlist: mockWantlistResult,
+        suggestions: {
+          synced: 1,
+          errors: 0,
+          total: 1,
+        },
       });
 
       expect(service.syncUserCollection).toHaveBeenCalledWith(
@@ -720,6 +746,11 @@ describe('DiscogsSyncService', () => {
       expect(result).toEqual({
         collection: mockCollectionResult,
         wantlist: mockWantlistResult,
+        suggestions: {
+          synced: 1,
+          errors: 0,
+          total: 1,
+        },
       });
 
       expect(service.syncUserCollection).toHaveBeenCalledWith(customUserId);
@@ -762,7 +793,7 @@ describe('DiscogsSyncService', () => {
         `Starting full sync for user: ${mockDiscogsConfig.username}`,
       );
       expect(logSpy).toHaveBeenCalledWith(
-        'Full sync completed: {"collection":{"synced":5,"errors":1,"total":6},"wantlist":{"synced":3,"errors":0,"total":3}}',
+        'Full sync completed: {"collection":{"synced":5,"errors":1,"total":6},"wantlist":{"synced":3,"errors":0,"total":3},"suggestions":{"synced":1,"errors":0,"total":1}}',
       );
     });
 
@@ -810,8 +841,11 @@ describe('DiscogsSyncService', () => {
         wantlist: {
           totalItems: 25,
         },
+        suggestions: {
+          totalItems: 1,
+        },
         summary: {
-          totalSyncedItems: 175,
+          totalSyncedItems: 176,
         },
       });
 
@@ -849,7 +883,7 @@ describe('DiscogsSyncService', () => {
       const result = await service.getSyncStatus();
 
       expect(result.summary.totalSyncedItems).toBe(
-        mockCollectionStats.totalItems + mockWantlistStats.totalItems,
+        mockCollectionStats.totalItems + mockWantlistStats.totalItems + 1,
       );
     });
 
