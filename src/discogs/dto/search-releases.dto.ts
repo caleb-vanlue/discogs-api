@@ -61,4 +61,3 @@ export class SearchReleasesResponse {
     items: number;
   };
 }
-

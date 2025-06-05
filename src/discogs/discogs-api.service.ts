@@ -175,6 +175,38 @@ export class DiscogsApiService {
     return allWants;
   }
 
+  async getAllSuggestions(): Promise<DiscogsRelease[]> {
+    const allSuggestions: DiscogsRelease[] = [];
+    let page = 1;
+    let totalPages = 1;
+
+    this.logger.log('Fetching entire suggestions folder...');
+
+    do {
+      const response = await this.getCollection({
+        folder: '8797697',
+        page,
+        perPage: 100,
+      });
+      allSuggestions.push(...response.releases);
+      totalPages = response.pagination.pages;
+      page++;
+
+      this.logger.log(
+        `Fetched page ${page - 1}/${totalPages} (${response.releases.length} suggestions)`,
+      );
+
+      if (page <= totalPages) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    } while (page <= totalPages);
+
+    this.logger.log(
+      `Fetched complete suggestions: ${allSuggestions.length} releases`,
+    );
+    return allSuggestions;
+  }
+
   async searchReleases(
     query: string,
     page: number = 1,

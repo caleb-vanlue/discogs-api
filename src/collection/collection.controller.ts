@@ -21,6 +21,7 @@ import {
 import { CollectionService } from './collection.service';
 import { AddToCollectionDto } from './dto/add-to-collection.dto';
 import { AddToWantlistDto } from './dto/add-to-wantlist.dto';
+import { AddToSuggestionsDto } from './dto/add-to-suggestions.dto';
 import {
   CollectionQueryDto,
   WantlistQueryDto,
@@ -98,6 +99,37 @@ export class CollectionController {
     );
   }
 
+  @Get(':userId/suggestions')
+  @ApiOperation({ summary: 'Get user suggestions' })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'User suggestions retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing API key',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  async getUserSuggestions(
+    @Param('userId') userId: string,
+    @Query() query: CollectionQueryDto,
+  ) {
+    this.logger.log(
+      `Getting suggestions for user ${userId} - sort: ${query.sort_by} ${query.sort_order}`,
+    );
+    return this.collectionService.getUserSuggestions(
+      userId,
+      query.limit,
+      query.offset,
+      query.sort_by,
+      query.sort_order,
+    );
+  }
+
   @Get(':userId/stats')
   @ApiOperation({ summary: 'Get user collection and wantlist stats' })
   @ApiParam({ name: 'userId', description: 'User ID' })
@@ -125,7 +157,7 @@ export class CollectionController {
     status: 401,
     description: 'Unauthorized - Invalid or missing API key',
   })
-  async getSortOptions() {
+  getSortOptions() {
     this.logger.log('Getting available sort options');
     return {
       collection: this.collectionService.getCollectionSortOptions(),
@@ -193,6 +225,36 @@ export class CollectionController {
     return this.collectionService.addToWantlist(userId, data);
   }
 
+  @Post(':userId/suggestions')
+  @ApiOperation({ summary: 'Add release to suggestions' })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiBody({ type: AddToSuggestionsDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Release added to suggestions successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing API key',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Release already in suggestions',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request data',
+  })
+  async addToSuggestions(
+    @Param('userId') userId: string,
+    @Body() data: AddToSuggestionsDto,
+  ) {
+    this.logger.log(
+      `Adding release ${data.releaseId} to suggestions for user ${userId}`,
+    );
+    return this.collectionService.addToSuggestions(userId, data);
+  }
+
   @Delete(':userId/collection/:releaseId')
   @ApiOperation({ summary: 'Remove release from collection' })
   @ApiParam({ name: 'userId', description: 'User ID' })
@@ -243,5 +305,31 @@ export class CollectionController {
       `Removing release ${releaseId} from wantlist for user ${userId}`,
     );
     return this.collectionService.removeFromWantlist(userId, releaseId);
+  }
+
+  @Delete(':userId/suggestions/:releaseId')
+  @ApiOperation({ summary: 'Remove release from suggestions' })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiParam({ name: 'releaseId', description: 'Release ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Release removed from suggestions successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing API key',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Release not found in suggestions',
+  })
+  async removeFromSuggestions(
+    @Param('userId') userId: string,
+    @Param('releaseId', ParseIntPipe) releaseId: number,
+  ) {
+    this.logger.log(
+      `Removing release ${releaseId} from suggestions for user ${userId}`,
+    );
+    return this.collectionService.removeFromSuggestions(userId, releaseId);
   }
 }

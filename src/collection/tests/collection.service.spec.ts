@@ -3,10 +3,8 @@ import { NotFoundException, ConflictException } from '@nestjs/common';
 import { CollectionService } from '../collection.service';
 import { UserCollectionRepository } from '../repositories/user-collection.repository';
 import { UserWantlistRepository } from '../repositories/user-wantlist.repository';
+import { UserSuggestionRepository } from '../repositories/user-suggestion.repository';
 import {
-  CollectionSortField,
-  WantlistSortField,
-  SortOrder,
   DEFAULT_LIMIT,
   DEFAULT_OFFSET,
 } from '../../common/constants/sort.constants';
@@ -15,6 +13,7 @@ describe('CollectionService', () => {
   let service: CollectionService;
   let collectionRepo: UserCollectionRepository;
   let wantlistRepo: UserWantlistRepository;
+  let suggestionRepo: UserSuggestionRepository;
 
   const mockCollectionRepo = {
     findByUserIdSorted: jest.fn(),
@@ -34,6 +33,15 @@ describe('CollectionService', () => {
     getAvailableSortOptions: jest.fn(),
   };
 
+  const mockSuggestionRepo = {
+    findByUserIdSorted: jest.fn(),
+    getSuggestionsStats: jest.fn(),
+    findByUserAndRelease: jest.fn(),
+    addToSuggestions: jest.fn(),
+    removeFromSuggestions: jest.fn(),
+    updateSuggestionItem: jest.fn(),
+  };
+
   const mockUserId = 'test-user-123';
   const mockReleaseId = 12345;
 
@@ -48,6 +56,10 @@ describe('CollectionService', () => {
         {
           provide: UserWantlistRepository,
           useValue: mockWantlistRepo,
+        },
+        {
+          provide: UserSuggestionRepository,
+          useValue: mockSuggestionRepo,
         },
       ],
     })
@@ -65,6 +77,9 @@ describe('CollectionService', () => {
       UserCollectionRepository,
     );
     wantlistRepo = module.get<UserWantlistRepository>(UserWantlistRepository);
+    suggestionRepo = module.get<UserSuggestionRepository>(
+      UserSuggestionRepository,
+    );
 
     jest.clearAllMocks();
   });
@@ -297,21 +312,29 @@ describe('CollectionService', () => {
         totalItems: 25,
         genres: { electronic: 15, hip_hop: 10 },
       };
+      const mockSuggestionStats = {
+        totalItems: 10,
+      };
 
       mockCollectionRepo.getCollectionStats.mockResolvedValue(
         mockCollectionStats,
       );
       mockWantlistRepo.getWantlistStats.mockResolvedValue(mockWantlistStats);
+      mockSuggestionRepo.getSuggestionsStats.mockResolvedValue(
+        mockSuggestionStats,
+      );
 
       const result = await service.getUserStats(mockUserId);
 
       expect(result).toEqual({
         collection: mockCollectionStats,
         wantlist: mockWantlistStats,
+        suggestions: mockSuggestionStats,
         summary: {
-          totalItems: 175,
+          totalItems: 185,
           collectionItems: 150,
           wantlistItems: 25,
+          suggestionItems: 10,
         },
       });
 
@@ -319,6 +342,9 @@ describe('CollectionService', () => {
         mockUserId,
       );
       expect(mockWantlistRepo.getWantlistStats).toHaveBeenCalledWith(
+        mockUserId,
+      );
+      expect(mockSuggestionRepo.getSuggestionsStats).toHaveBeenCalledWith(
         mockUserId,
       );
     });
@@ -627,6 +653,123 @@ describe('CollectionService', () => {
       expect(logSpy).toHaveBeenCalledWith(
         `Getting wantlist for user ${mockUserId} - sort: title DESC`,
       );
+    });
+  });
+
+  describe('getUserSuggestions', () => {
+    it('should return user suggestions with sorting and pagination', async () => {
+      const mockSuggestions = [
+        { id: 1, releaseId: mockReleaseId, userId: mockUserId },
+      ];
+      const mockTotal = 1;
+      mockSuggestionRepo.findByUserIdSorted.mockResolvedValue([
+        mockSuggestions,
+        mockTotal,
+      ]);
+
+      const result = await service.getUserSuggestions(
+        mockUserId,
+        10,
+        0,
+        'title',
+        'asc',
+      );
+
+      expect(result).toEqual({
+        data: mockSuggestions,
+        total: mockTotal,
+        limit: 10,
+        offset: 0,
+        hasMore: false,
+        sortBy: 'title',
+        sortOrder: 'ASC',
+      });
+
+      expect(mockSuggestionRepo.findByUserIdSorted).toHaveBeenCalledWith(
+        mockUserId,
+        10,
+        0,
+        'title',
+        'ASC',
+      );
+    });
+  });
+
+  describe('addToSuggestions', () => {
+    const addData = {
+      releaseId: mockReleaseId,
+      notes: 'Recommended by friend',
+    };
+
+    it('should add release to suggestions successfully', async () => {
+      const mockResponse = { id: 1, ...addData };
+      mockSuggestionRepo.findByUserAndRelease.mockResolvedValue(null);
+      mockSuggestionRepo.addToSuggestions.mockResolvedValue(mockResponse);
+
+      const result = await service.addToSuggestions(mockUserId, addData);
+
+      expect(result).toEqual(mockResponse);
+      expect(mockSuggestionRepo.findByUserAndRelease).toHaveBeenCalledWith(
+        mockUserId,
+        mockReleaseId,
+      );
+      expect(mockSuggestionRepo.addToSuggestions).toHaveBeenCalledWith({
+        userId: mockUserId,
+        releaseId: mockReleaseId,
+        notes: 'Recommended by friend',
+        dateAdded: expect.any(Date),
+      });
+    });
+
+    it('should throw ConflictException if release already in suggestions', async () => {
+      mockSuggestionRepo.findByUserAndRelease.mockResolvedValue({
+        id: 1,
+        releaseId: mockReleaseId,
+      });
+
+      await expect(
+        service.addToSuggestions(mockUserId, addData),
+      ).rejects.toThrow(ConflictException);
+
+      expect(mockSuggestionRepo.addToSuggestions).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('removeFromSuggestions', () => {
+    it('should remove release from suggestions successfully', async () => {
+      mockSuggestionRepo.findByUserAndRelease.mockResolvedValue({
+        id: 1,
+        releaseId: mockReleaseId,
+      });
+      mockSuggestionRepo.removeFromSuggestions.mockResolvedValue(undefined);
+
+      const result = await service.removeFromSuggestions(
+        mockUserId,
+        mockReleaseId,
+      );
+
+      expect(result).toEqual({
+        message: 'Release removed from suggestions',
+        releaseId: mockReleaseId,
+      });
+      expect(mockSuggestionRepo.findByUserAndRelease).toHaveBeenCalledWith(
+        mockUserId,
+        mockReleaseId,
+      );
+      expect(mockSuggestionRepo.removeFromSuggestions).toHaveBeenCalledWith(
+        mockUserId,
+        mockReleaseId,
+      );
+    });
+
+    it('should throw NotFoundException if release not in suggestions', async () => {
+      mockSuggestionRepo.findByUserAndRelease.mockResolvedValue(null);
+
+      await expect(
+        service.removeFromSuggestions(mockUserId, mockReleaseId),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockSuggestionRepo.removeFromSuggestions).not.toHaveBeenCalled();
     });
   });
 });
