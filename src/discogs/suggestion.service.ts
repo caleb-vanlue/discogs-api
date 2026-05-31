@@ -9,8 +9,8 @@ import { DiscogsSyncService } from './discogs-sync.service';
 import { UserSuggestionRepository } from '../collection/repositories/user-suggestion.repository';
 import { ReleaseRepository } from '../release/release.repository';
 import {
-  CollectionSortField,
-  SortOrder,
+  mapWantlistSortField,
+  mapSortOrder,
 } from '../common/constants/sort.constants';
 
 @Injectable()
@@ -119,8 +119,8 @@ export class SuggestionService {
     sortOrder?: string,
   ) {
     // Use the same sort mapping logic as CollectionService
-    const sortField = this.mapSortField(sortBy);
-    const order = this.mapSortOrder(sortOrder);
+    const sortField = mapWantlistSortField(sortBy);
+    const order = mapSortOrder(sortOrder);
 
     this.logger.log(
       `Getting suggestions for user ${userId} - sort: ${sortField} ${order}`,
@@ -145,26 +145,4 @@ export class SuggestionService {
     };
   }
 
-  private mapSortField(sortBy?: string): CollectionSortField {
-    const mapping: Record<string, CollectionSortField> = {
-      added: 'dateAdded',
-      date_added: 'dateAdded',
-      dateAdded: 'dateAdded',
-      title: 'title',
-      artist: 'primaryArtist',
-      primaryArtist: 'primaryArtist',
-      year: 'year',
-      genre: 'primaryGenre',
-      primaryGenre: 'primaryGenre',
-      format: 'primaryFormat',
-      primaryFormat: 'primaryFormat',
-    };
-
-    return mapping[sortBy || 'added'] || 'dateAdded';
-  }
-
-  private mapSortOrder(sortOrder?: string): SortOrder {
-    const order = sortOrder?.toLowerCase();
-    return order === 'asc' || order === 'ascending' ? 'ASC' : 'DESC';
-  }
 }
