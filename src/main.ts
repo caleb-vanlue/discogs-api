@@ -28,7 +28,6 @@ async function bootstrap() {
       'An API to manage Discogs collections and wantlists with full CRUD operations. Requires API key authentication.',
     )
     .setVersion('1.0')
-    .addTag('releases', 'Release management operations')
     .addTag('collection', 'Collection and wantlist operations')
     .addApiKey(
       {
