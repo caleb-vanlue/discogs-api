@@ -39,18 +39,21 @@ describe('DiscogsSyncService', () => {
     findByUserAndRelease: jest.fn(),
     addToCollection: jest.fn(),
     updateCollectionItem: jest.fn(),
+    removeOrphans: jest.fn().mockResolvedValue(0),
   };
 
   const mockWantlistRepository = {
     findByUserAndRelease: jest.fn(),
     addToWantlist: jest.fn(),
     updateWantlistItem: jest.fn(),
+    removeOrphans: jest.fn().mockResolvedValue(0),
   };
 
   const mockSuggestionRepository = {
     findByUserAndRelease: jest.fn(),
     addToSuggestions: jest.fn(),
     updateSuggestionItem: jest.fn(),
+    removeOrphans: jest.fn().mockResolvedValue(0),
   };
 
   const mockBasicInformation: BasicInformation = {
@@ -274,6 +277,7 @@ describe('DiscogsSyncService', () => {
         synced: 1,
         errors: 0,
         total: 1,
+        removed: 0,
       });
 
       expect(mockDiscogsApiService.getAllCollection).toHaveBeenCalled();
@@ -320,6 +324,7 @@ describe('DiscogsSyncService', () => {
         synced: 1,
         errors: 0,
         total: 1,
+        removed: 0,
       });
 
       expect(mockCollectionRepository.addToCollection).not.toHaveBeenCalled();
@@ -435,6 +440,7 @@ describe('DiscogsSyncService', () => {
         synced: 1,
         errors: 1,
         total: 2,
+        removed: 0,
       });
     });
 
@@ -452,7 +458,7 @@ describe('DiscogsSyncService', () => {
         `Synced release: ${mockRelease.title}`,
       );
       expect(logSpy).toHaveBeenCalledWith(
-        'Collection sync completed: {"synced":1,"errors":0,"total":1}',
+        'Collection sync completed: {"synced":1,"errors":0,"total":1,"removed":0}',
       );
     });
 
@@ -501,6 +507,7 @@ describe('DiscogsSyncService', () => {
         synced: 1,
         errors: 0,
         total: 1,
+        removed: 0,
       });
 
       expect(mockDiscogsApiService.getAllWantlist).toHaveBeenCalled();
@@ -546,6 +553,7 @@ describe('DiscogsSyncService', () => {
         synced: 1,
         errors: 0,
         total: 1,
+        removed: 0,
       });
 
       expect(mockWantlistRepository.addToWantlist).not.toHaveBeenCalled();
@@ -622,6 +630,7 @@ describe('DiscogsSyncService', () => {
         synced: 1,
         errors: 1,
         total: 2,
+        removed: 0,
       });
     });
 
@@ -639,7 +648,7 @@ describe('DiscogsSyncService', () => {
         `Synced want: ${mockRelease.title}`,
       );
       expect(logSpy).toHaveBeenCalledWith(
-        'Wantlist sync completed: {"synced":1,"errors":0,"total":1}',
+        'Wantlist sync completed: {"synced":1,"errors":0,"total":1,"removed":0}',
       );
     });
 
@@ -673,12 +682,14 @@ describe('DiscogsSyncService', () => {
       synced: 5,
       errors: 1,
       total: 6,
+      removed: 0,
     };
 
     const mockWantlistResult = {
       synced: 3,
       errors: 0,
       total: 3,
+      removed: 0,
     };
 
     beforeEach(() => {
@@ -700,6 +711,7 @@ describe('DiscogsSyncService', () => {
           synced: 1,
           errors: 0,
           total: 1,
+          removed: 0,
         },
       });
 
@@ -723,6 +735,7 @@ describe('DiscogsSyncService', () => {
           synced: 1,
           errors: 0,
           total: 1,
+          removed: 0,
         },
       });
 
@@ -766,7 +779,7 @@ describe('DiscogsSyncService', () => {
         `Starting full sync for user: ${mockDiscogsConfig.username}`,
       );
       expect(logSpy).toHaveBeenCalledWith(
-        'Full sync completed: {"collection":{"synced":5,"errors":1,"total":6},"wantlist":{"synced":3,"errors":0,"total":3},"suggestions":{"synced":1,"errors":0,"total":1}}',
+        'Full sync completed: {"collection":{"synced":5,"errors":1,"total":6,"removed":0},"wantlist":{"synced":3,"errors":0,"total":3,"removed":0},"suggestions":{"synced":1,"errors":0,"total":1,"removed":0}}',
       );
     });
 
@@ -790,6 +803,7 @@ describe('DiscogsSyncService', () => {
         synced: 0,
         errors: 0,
         total: 0,
+        removed: 0,
       });
     });
 
@@ -802,6 +816,7 @@ describe('DiscogsSyncService', () => {
         synced: 0,
         errors: 0,
         total: 0,
+        removed: 0,
       });
     });
 

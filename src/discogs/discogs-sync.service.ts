@@ -58,6 +58,7 @@ export class DiscogsSyncService {
     synced: number;
     errors: number;
     total: number;
+    removed: number;
   }> {
     this.logger.log(`Starting collection sync for user: ${userId}`);
 
@@ -113,11 +114,16 @@ export class DiscogsSyncService {
         }
       }
 
-      const result = {
-        synced,
-        errors,
-        total: discogsReleases.length,
-      };
+      let removed = 0;
+      if (discogsReleases.length > 0) {
+        const activeDiscogsIds = discogsReleases.map((r) => r.basic_information.id);
+        removed = await this.collectionRepo.removeOrphans(userId, activeDiscogsIds);
+        if (removed > 0) {
+          this.logger.log(`Removed ${removed} items no longer in Discogs collection`);
+        }
+      }
+
+      const result = { synced, errors, total: discogsReleases.length, removed };
 
       this.logger.log(`Collection sync completed: ${JSON.stringify(result)}`);
       return result;
@@ -133,6 +139,7 @@ export class DiscogsSyncService {
     synced: number;
     errors: number;
     total: number;
+    removed: number;
   }> {
     this.logger.log(`Starting wantlist sync for user: ${userId}`);
 
@@ -184,11 +191,16 @@ export class DiscogsSyncService {
         }
       }
 
-      const result = {
-        synced,
-        errors,
-        total: discogsWants.length,
-      };
+      let removed = 0;
+      if (discogsWants.length > 0) {
+        const activeDiscogsIds = discogsWants.map((r) => r.basic_information.id);
+        removed = await this.wantlistRepo.removeOrphans(userId, activeDiscogsIds);
+        if (removed > 0) {
+          this.logger.log(`Removed ${removed} items no longer in Discogs wantlist`);
+        }
+      }
+
+      const result = { synced, errors, total: discogsWants.length, removed };
 
       this.logger.log(`Wantlist sync completed: ${JSON.stringify(result)}`);
       return result;
@@ -204,6 +216,7 @@ export class DiscogsSyncService {
     synced: number;
     errors: number;
     total: number;
+    removed: number;
   }> {
     this.logger.log(`Starting suggestions sync for user: ${userId}`);
 
@@ -255,11 +268,16 @@ export class DiscogsSyncService {
         }
       }
 
-      const result = {
-        synced,
-        errors,
-        total: discogsSuggestions.length,
-      };
+      let removed = 0;
+      if (discogsSuggestions.length > 0) {
+        const activeDiscogsIds = discogsSuggestions.map((r) => r.basic_information.id);
+        removed = await this.suggestionRepo.removeOrphans(userId, activeDiscogsIds);
+        if (removed > 0) {
+          this.logger.log(`Removed ${removed} items no longer in Discogs suggestions`);
+        }
+      }
+
+      const result = { synced, errors, total: discogsSuggestions.length, removed };
 
       this.logger.log(`Suggestions sync completed: ${JSON.stringify(result)}`);
       return result;
@@ -270,9 +288,9 @@ export class DiscogsSyncService {
   }
 
   async syncAll(userId: string = this.discogsConfig.username): Promise<{
-    collection: { synced: number; errors: number; total: number };
-    wantlist: { synced: number; errors: number; total: number };
-    suggestions: { synced: number; errors: number; total: number };
+    collection: { synced: number; errors: number; total: number; removed: number };
+    wantlist: { synced: number; errors: number; total: number; removed: number };
+    suggestions: { synced: number; errors: number; total: number; removed: number };
   }> {
     this.logger.log(`Starting full sync for user: ${userId}`);
 

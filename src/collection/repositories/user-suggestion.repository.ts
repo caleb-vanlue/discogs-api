@@ -89,4 +89,17 @@ export class UserSuggestionRepository {
     await this.repository.delete({ userId, releaseId });
   }
 
+  async removeOrphans(userId: string, activeDiscogsIds: number[]): Promise<number> {
+    const itemsToRemove = await this.repository
+      .createQueryBuilder('item')
+      .innerJoin('item.release', 'release')
+      .where('item.userId = :userId', { userId })
+      .andWhere('release.discogsId NOT IN (:...ids)', { ids: activeDiscogsIds })
+      .getMany();
+
+    if (itemsToRemove.length === 0) return 0;
+
+    await this.repository.remove(itemsToRemove);
+    return itemsToRemove.length;
+  }
 }
