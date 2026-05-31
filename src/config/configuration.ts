@@ -12,6 +12,7 @@ export default registerAs('app', () => ({
     username: process.env.DISCOGS_USERNAME,
     apiToken: process.env.DISCOGS_API_TOKEN,
     baseUrl: process.env.DISCOGS_API_BASE_URL || 'https://api.discogs.com',
+    suggestionsFolderId: process.env.DISCOGS_SUGGESTIONS_FOLDER_ID,
   },
   apiKey: process.env.API_KEY,
   port: parseInt(process.env.PORT ?? '3000'),

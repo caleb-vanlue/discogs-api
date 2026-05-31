@@ -21,6 +21,7 @@ describe('DiscogsApiService', () => {
     apiToken: 'test-token-123',
     username: 'test-user',
     baseUrl: 'https://api.discogs.com',
+    suggestionsFolderId: '8797697',
   };
 
   const mockHttpService = {

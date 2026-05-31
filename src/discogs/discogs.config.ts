@@ -24,7 +24,11 @@ export class DiscogsConfig {
     );
   }
 
-  get hasApiToken(): boolean {
-    return !!this.apiToken;
+  get suggestionsFolderId(): string {
+    const folderId = this.configService.get<string>('app.discogs.suggestionsFolderId');
+    if (!folderId) {
+      throw new Error('DISCOGS_SUGGESTIONS_FOLDER_ID environment variable is required');
+    }
+    return folderId;
   }
 }

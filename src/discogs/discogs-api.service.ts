@@ -184,7 +184,7 @@ export class DiscogsApiService {
 
     do {
       const response = await this.getCollection({
-        folder: '8797697',
+        folder: this.discogsConfig.suggestionsFolderId,
         page,
         perPage: 100,
       });
@@ -265,12 +265,13 @@ export class DiscogsApiService {
 
   async addToFolder(
     releaseId: number,
-    folderId: number = 8797697,
+    folderId?: number,
   ): Promise<{ instance_id: number }> {
+    const resolvedFolderId = folderId ?? parseInt(this.discogsConfig.suggestionsFolderId, 10);
     try {
-      const url = `${this.discogsConfig.baseUrl}/users/${this.discogsConfig.username}/collection/folders/${folderId}/releases/${releaseId}`;
+      const url = `${this.discogsConfig.baseUrl}/users/${this.discogsConfig.username}/collection/folders/${resolvedFolderId}/releases/${releaseId}`;
 
-      this.logger.debug(`Adding release ${releaseId} to folder ${folderId}`);
+      this.logger.debug(`Adding release ${releaseId} to folder ${resolvedFolderId}`);
 
       const response = await firstValueFrom(
         this.httpService.post<{ instance_id: number }>(
@@ -283,7 +284,7 @@ export class DiscogsApiService {
       );
 
       this.logger.log(
-        `Successfully added release ${releaseId} to folder ${folderId}`,
+        `Successfully added release ${releaseId} to folder ${resolvedFolderId}`,
       );
       return response.data;
     } catch (error) {

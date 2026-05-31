@@ -53,6 +53,9 @@ class EnvironmentVariables {
   DISCOGS_API_TOKEN?: string;
 
   @IsString()
+  DISCOGS_SUGGESTIONS_FOLDER_ID: string;
+
+  @IsString()
   @IsOptional()
   DISCOGS_API_BASE_URL?: string = 'https://api.discogs.com';
 }
