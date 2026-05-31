@@ -1,14 +1,14 @@
 # Discogs Collection API
 
-A NestJS REST API for managing Discogs music collections and wantlists with CRUD operations, advanced sorting, pagination, and API key authentication.
+A proprietary NestJS REST API for managing Discogs music collections and wantlists, with Discogs search, suggestions, automatic sync, and API key authentication. Utilized by side-a, my personal portfolio site.
 
 ## Features
 
-- **Collection Management**: Add, remove, and organize Discogs collection items with ratings and notes
-- **Wantlist Management**: Track desired releases with personal notes
+- **Collection & Wantlist**: Read your synced Discogs collection and wantlist with sorting and pagination
+- **Discogs Search**: Search releases directly against the Discogs API
+- **Suggestions**: Track releases you want to suggest to others, stored locally
+- **Auto Sync**: Syncs your Discogs collection and wantlist on startup and nightly at midnight UTC
 - **Advanced Sorting**: Sort by date added, title, artist, year, rating, genre, or format
-- **Pagination**: Handle large collections with configurable page sizes
-- **Statistics**: Collection and wantlist analytics with rating averages
 - **API Key Authentication**: Secure endpoints with token-based access control
 - **Request Validation**: Comprehensive input validation with detailed error messages
 - **API Documentation**: Interactive Swagger/OpenAPI documentation
@@ -70,6 +70,10 @@ A NestJS REST API for managing Discogs music collections and wantlists with CRUD
    # Application
    PORT=3000
    NODE_ENV=development
+
+   # Sync behavior (optional, both default to true)
+   SYNC_ON_STARTUP=true
+   CRON_SYNC_ENABLED=true
    ```
 
 4. **Database setup**
@@ -90,6 +94,13 @@ A NestJS REST API for managing Discogs music collections and wantlists with CRUD
    npm run start:prod
    ```
 
+## Sync Behavior
+
+On startup the app automatically syncs your Discogs collection and wantlist into the local database. A daily sync also runs at midnight UTC. Both can be disabled independently via environment variables:
+
+- `SYNC_ON_STARTUP=false` — skip the startup sync
+- `CRON_SYNC_ENABLED=false` — disable the nightly cron
+
 ## API Documentation
 
 ### Base URL
@@ -109,83 +120,83 @@ All endpoints require API key authentication via one of:
 
 Access Swagger UI at `http://localhost:3000/api` for complete API documentation with request/response examples.
 
-### Core Endpoints
+### Endpoints
 
-#### Collections
+#### Collection
 
-- `GET /collection/{userId}` - Retrieve user collection with sorting and pagination
-- `POST /collection/{userId}/collection` - Add release to collection
-- `DELETE /collection/{userId}/collection/{releaseId}` - Remove from collection
-- `GET /collection/{userId}/stats` - Collection statistics
+- `GET /collection/{userId}` — Retrieve user collection with sorting and pagination
 
-#### Wantlists
+#### Wantlist
 
-- `GET /collection/{userId}/wantlist` - Retrieve user wantlist
-- `POST /collection/{userId}/wantlist` - Add release to wantlist
-- `DELETE /collection/{userId}/wantlist/{releaseId}` - Remove from wantlist
+- `GET /collection/{userId}/wantlist` — Retrieve user wantlist with sorting and pagination
 
-#### Releases
+#### Discogs
 
-- `GET /releases` - Browse all releases with sorting and pagination
-- `GET /releases/{discogsId}` - Get specific release by Discogs ID
+- `GET /discogs/search` — Search for releases on Discogs
+- `GET /discogs/suggestions/{userId}` — Get a user's suggestion list
+- `POST /discogs/suggestions/{userId}` — Add a release to a user's suggestions
+- `DELETE /discogs/suggestions/{userId}/{releaseId}` — Remove a release from suggestions
 
 ### Query Parameters
 
 **Pagination**
 
-- `limit`: Items per page (1-100, default: 50)
+- `limit`: Items per page (1–100, default: 50)
 - `offset`: Items to skip (default: 0)
 
 **Sorting**
 
 - `sort_by`: Field to sort by
-  - Collections: `dateAdded`, `title`, `primaryArtist`, `year`, `rating`, `primaryGenre`, `primaryFormat`
-  - Wantlists: `dateAdded`, `title`, `primaryArtist`, `year`, `primaryGenre`, `primaryFormat`
+  - Collection: `dateAdded`, `title`, `primaryArtist`, `year`, `rating`, `primaryGenre`, `primaryFormat`
+  - Wantlist & Suggestions: `dateAdded`, `title`, `primaryArtist`, `year`, `primaryGenre`, `primaryFormat`
 - `sort_order`: `ASC` or `DESC` (default: `DESC`)
+
+**Search** (`GET /discogs/search`)
+
+- `query`: Search string (required)
+- `page`: Page number (default: 1)
+- `per_page`: Results per page (default: 25)
 
 ### Example Requests
 
-**Get collection with sorting**
+**Get collection sorted by title**
 
 ```bash
 curl -H "X-API-Key: your-key" \
   "http://localhost:3000/collection/username?limit=25&sort_by=title&sort_order=ASC"
 ```
 
-**Add to collection**
+**Search Discogs**
+
+```bash
+curl -H "X-API-Key: your-key" \
+  "http://localhost:3000/discogs/search?query=kind+of+blue"
+```
+
+**Add to suggestions**
 
 ```bash
 curl -X POST -H "X-API-Key: your-key" -H "Content-Type: application/json" \
-  -d '{"releaseId": 123456, "rating": 5, "notes": "Signed copy"}' \
-  "http://localhost:3000/collection/username/collection"
+  -d '{"releaseId": 123456}' \
+  "http://localhost:3000/discogs/suggestions/username"
 ```
 
 ## Development
 
-### Database Operations
-
-**Create migration**
+### Commands
 
 ```bash
-npm run migration:generate -- --name=MigrationName
+npm run start:dev       # Start with hot reload
+npm run build           # Build for production
+npm test                # Run unit tests
+npm run test:cov        # Run tests with coverage
+npm run lint            # Lint and fix issues
 ```
 
-**Run migrations**
+### Database Migrations
 
 ```bash
-npm run migration:run
+npm run migration:generate -- --name=MigrationName   # Generate from entity changes
+npm run migration:run                                  # Apply pending migrations
+npm run migration:revert                               # Rollback last migration
 ```
-
-**Revert migration**
-
-```bash
-npm run migration:revert
-```
-
-## Deployment
-
-### Environment-Specific Configuration
-
-- Use separate `.env` files for different environments
-- Validate configuration for each deployment target
-- Ensure API keys are securely managed in production
