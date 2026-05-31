@@ -30,7 +30,6 @@ import { UserSuggestionRepository } from './repositories/user-suggestion.reposit
     UserCollectionRepository,
     UserWantlistRepository,
     UserSuggestionRepository,
-    CollectionService,
   ],
 })
 export class CollectionModule {}

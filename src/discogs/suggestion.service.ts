@@ -145,10 +145,6 @@ export class SuggestionService {
     };
   }
 
-  async getUserSuggestionsStats(userId: string) {
-    return await this.suggestionRepo.getSuggestionsStats(userId);
-  }
-
   private mapSortField(sortBy?: string): CollectionSortField {
     const mapping: Record<string, CollectionSortField> = {
       added: 'dateAdded',

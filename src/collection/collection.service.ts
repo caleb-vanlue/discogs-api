@@ -1,12 +1,6 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  ConflictException,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { UserWantlistRepository } from './repositories/user-wantlist.repository';
 import { UserCollectionRepository } from './repositories/user-collection.repository';
-import { UserSuggestionRepository } from './repositories/user-suggestion.repository';
 import {
   CollectionSortField,
   WantlistSortField,
@@ -22,7 +16,6 @@ export class CollectionService {
   constructor(
     private readonly collectionRepo: UserCollectionRepository,
     private readonly wantlistRepo: UserWantlistRepository,
-    private readonly suggestionRepo: UserSuggestionRepository,
   ) {}
 
   async getUserCollection(
@@ -91,144 +84,6 @@ export class CollectionService {
     };
   }
 
-
-  async getUserStats(userId: string) {
-    const [collectionStats, wantlistStats, suggestionStats] = await Promise.all(
-      [
-        this.collectionRepo.getCollectionStats(userId),
-        this.wantlistRepo.getWantlistStats(userId),
-        this.suggestionRepo.getSuggestionsStats(userId),
-      ],
-    );
-
-    return {
-      collection: collectionStats,
-      wantlist: wantlistStats,
-      suggestions: suggestionStats,
-      summary: {
-        totalItems:
-          collectionStats.totalItems +
-          wantlistStats.totalItems +
-          suggestionStats.totalItems,
-        collectionItems: collectionStats.totalItems,
-        wantlistItems: wantlistStats.totalItems,
-        suggestionItems: suggestionStats.totalItems,
-      },
-    };
-  }
-
-  async addToCollection(
-    userId: string,
-    data: { releaseId: number; rating?: number; notes?: string },
-  ) {
-    const existing = await this.collectionRepo.findByUserAndRelease(
-      userId,
-      data.releaseId,
-    );
-
-    if (existing) {
-      throw new ConflictException('Release already in collection');
-    }
-
-    try {
-      return await this.collectionRepo.addToCollection({
-        userId,
-        releaseId: data.releaseId,
-        rating: data.rating || 0,
-        notes: data.notes,
-        dateAdded: new Date(),
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to add release ${data.releaseId} to collection for user ${userId}`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  async addToWantlist(
-    userId: string,
-    data: { releaseId: number; notes?: string },
-  ) {
-    const existing = await this.wantlistRepo.findByUserAndRelease(
-      userId,
-      data.releaseId,
-    );
-
-    if (existing) {
-      throw new ConflictException('Release already in wantlist');
-    }
-
-    try {
-      return await this.wantlistRepo.addToWantlist({
-        userId,
-        releaseId: data.releaseId,
-        notes: data.notes,
-        dateAdded: new Date(),
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to add release ${data.releaseId} to wantlist for user ${userId}`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  async removeFromCollection(userId: string, releaseId: number) {
-    const existing = await this.collectionRepo.findByUserAndRelease(
-      userId,
-      releaseId,
-    );
-
-    if (!existing) {
-      throw new NotFoundException('Release not found in collection');
-    }
-
-    try {
-      await this.collectionRepo.removeFromCollection(userId, releaseId);
-      return { message: 'Release removed from collection', releaseId };
-    } catch (error) {
-      this.logger.error(
-        `Failed to remove release ${releaseId} from collection for user ${userId}`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  async removeFromWantlist(userId: string, releaseId: number) {
-    const existing = await this.wantlistRepo.findByUserAndRelease(
-      userId,
-      releaseId,
-    );
-
-    if (!existing) {
-      throw new NotFoundException('Release not found in wantlist');
-    }
-
-    try {
-      await this.wantlistRepo.removeFromWantlist(userId, releaseId);
-      return { message: 'Release removed from wantlist', releaseId };
-    } catch (error) {
-      this.logger.error(
-        `Failed to remove release ${releaseId} from wantlist for user ${userId}`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-
-  getCollectionSortOptions() {
-    return this.collectionRepo.getAvailableSortOptions();
-  }
-
-  getWantlistSortOptions() {
-    return this.wantlistRepo.getAvailableSortOptions();
-  }
-
   private mapCollectionSortField(sortBy?: string): CollectionSortField {
     const mapping: Record<string, CollectionSortField> = {
       added: 'dateAdded',
@@ -270,5 +125,4 @@ export class CollectionService {
     const order = sortOrder?.toLowerCase();
     return order === 'asc' || order === 'ascending' ? 'ASC' : 'DESC';
   }
-
 }

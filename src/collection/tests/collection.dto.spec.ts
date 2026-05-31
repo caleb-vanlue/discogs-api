@@ -1,128 +1,11 @@
 import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
-import { AddToCollectionDto } from '../dto/add-to-collection.dto';
-import { AddToWantlistDto } from '../dto/add-to-wantlist.dto';
 import {
   CollectionQueryDto,
   WantlistQueryDto,
 } from '../dto/collection-query.dto';
 
 describe('Collection DTOs', () => {
-  describe('AddToCollectionDto', () => {
-    it('should validate a valid DTO', async () => {
-      const dto = plainToClass(AddToCollectionDto, {
-        releaseId: 12345,
-        rating: 4,
-        notes: 'Great album!',
-      });
-
-      const errors = await validate(dto);
-      expect(errors.length).toBe(0);
-    });
-
-    it('should fail validation when releaseId is missing', async () => {
-      const dto = plainToClass(AddToCollectionDto, {
-        rating: 4,
-        notes: 'Great album!',
-      });
-
-      const errors = await validate(dto);
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('releaseId');
-    });
-
-    it('should fail validation when releaseId is not a number', async () => {
-      const dto = plainToClass(AddToCollectionDto, {
-        releaseId: 'not-a-number',
-        rating: 4,
-      });
-
-      const errors = await validate(dto);
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('releaseId');
-    });
-
-    it('should fail validation when rating is below 0', async () => {
-      const dto = plainToClass(AddToCollectionDto, {
-        releaseId: 12345,
-        rating: -1,
-      });
-
-      const errors = await validate(dto);
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('rating');
-      expect(errors[0].constraints).toHaveProperty('min');
-    });
-
-    it('should fail validation when rating is above 5', async () => {
-      const dto = plainToClass(AddToCollectionDto, {
-        releaseId: 12345,
-        rating: 6,
-      });
-
-      const errors = await validate(dto);
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('rating');
-      expect(errors[0].constraints).toHaveProperty('max');
-    });
-
-    it('should allow optional fields to be undefined', async () => {
-      const dto = plainToClass(AddToCollectionDto, {
-        releaseId: 12345,
-      });
-
-      const errors = await validate(dto);
-      expect(errors.length).toBe(0);
-      expect(dto.rating).toBeUndefined();
-      expect(dto.notes).toBeUndefined();
-    });
-
-    it('should transform string numbers to numbers', async () => {
-      const dto = plainToClass(AddToCollectionDto, {
-        releaseId: '12345',
-        rating: '4',
-      });
-
-      expect(dto.releaseId).toBe(12345);
-      expect(dto.rating).toBe(4);
-
-      const errors = await validate(dto);
-      expect(errors.length).toBe(0);
-    });
-  });
-
-  describe('AddToWantlistDto', () => {
-    it('should validate a valid DTO', async () => {
-      const dto = plainToClass(AddToWantlistDto, {
-        releaseId: 12345,
-        notes: 'Looking for first pressing',
-      });
-
-      const errors = await validate(dto);
-      expect(errors.length).toBe(0);
-    });
-
-    it('should fail validation when releaseId is missing', async () => {
-      const dto = plainToClass(AddToWantlistDto, {
-        notes: 'Looking for first pressing',
-      });
-
-      const errors = await validate(dto);
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('releaseId');
-    });
-
-    it('should allow notes to be optional', async () => {
-      const dto = plainToClass(AddToWantlistDto, {
-        releaseId: 12345,
-      });
-
-      const errors = await validate(dto);
-      expect(errors.length).toBe(0);
-      expect(dto.notes).toBeUndefined();
-    });
-  });
-
   describe('CollectionQueryDto', () => {
     it('should validate a valid DTO with all fields', async () => {
       const dto = plainToClass(CollectionQueryDto, {
@@ -188,10 +71,7 @@ describe('Collection DTOs', () => {
       ];
 
       for (const field of validSortFields) {
-        const dto = plainToClass(CollectionQueryDto, {
-          sort_by: field,
-        });
-
+        const dto = plainToClass(CollectionQueryDto, { sort_by: field });
         const errors = await validate(dto);
         expect(errors.length).toBe(0);
       }
@@ -201,19 +81,14 @@ describe('Collection DTOs', () => {
       const validOrders = ['ASC', 'DESC', 'asc', 'desc'];
 
       for (const order of validOrders) {
-        const dto = plainToClass(CollectionQueryDto, {
-          sort_order: order,
-        });
-
+        const dto = plainToClass(CollectionQueryDto, { sort_order: order });
         const errors = await validate(dto);
         expect(errors.length).toBe(0);
       }
     });
 
     it('should fail validation with invalid sort_order', async () => {
-      const dto = plainToClass(CollectionQueryDto, {
-        sort_order: 'invalid',
-      });
+      const dto = plainToClass(CollectionQueryDto, { sort_order: 'invalid' });
 
       const errors = await validate(dto);
       expect(errors.length).toBeGreaterThan(0);
@@ -222,10 +97,7 @@ describe('Collection DTOs', () => {
     });
 
     it('should transform string numbers to numbers', async () => {
-      const dto = plainToClass(CollectionQueryDto, {
-        limit: '50',
-        offset: '10',
-      });
+      const dto = plainToClass(CollectionQueryDto, { limit: '50', offset: '10' });
 
       expect(dto.limit).toBe(50);
       expect(dto.offset).toBe(10);
@@ -250,7 +122,7 @@ describe('Collection DTOs', () => {
 
     it('should not allow rating as a sort field for wantlist', async () => {
       const dto = plainToClass(WantlistQueryDto, {
-        sort_by: 'rating' as any, // Force to test validation
+        sort_by: 'rating' as any,
       });
 
       const errors = await validate(dto);
@@ -270,20 +142,14 @@ describe('Collection DTOs', () => {
       ];
 
       for (const field of validSortFields) {
-        const dto = plainToClass(WantlistQueryDto, {
-          sort_by: field,
-        });
-
+        const dto = plainToClass(WantlistQueryDto, { sort_by: field });
         const errors = await validate(dto);
         expect(errors.length).toBe(0);
       }
     });
 
     it('should validate pagination parameters', async () => {
-      const dto = plainToClass(WantlistQueryDto, {
-        limit: 100,
-        offset: 50,
-      });
+      const dto = plainToClass(WantlistQueryDto, { limit: 100, offset: 50 });
 
       const errors = await validate(dto);
       expect(errors.length).toBe(0);

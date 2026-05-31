@@ -293,35 +293,4 @@ export class DiscogsSyncService {
     return result;
   }
 
-  async getSyncStatus(userId: string = this.discogsConfig.username) {
-    const [collectionStats, wantlistStats, suggestionStats] = await Promise.all(
-      [
-        this.collectionRepo.getCollectionStats(userId),
-        this.wantlistRepo.getWantlistStats(userId),
-        this.suggestionRepo.getSuggestionsStats(userId),
-      ],
-    );
-
-    return {
-      userId,
-      lastSyncAttempt: new Date().toISOString(),
-      collection: {
-        totalItems: collectionStats.totalItems,
-        ratedItems: collectionStats.ratedItems,
-        averageRating: collectionStats.averageRating,
-      },
-      wantlist: {
-        totalItems: wantlistStats.totalItems,
-      },
-      suggestions: {
-        totalItems: suggestionStats.totalItems,
-      },
-      summary: {
-        totalSyncedItems:
-          collectionStats.totalItems +
-          wantlistStats.totalItems +
-          suggestionStats.totalItems,
-      },
-    };
-  }
 }

@@ -212,15 +212,4 @@ describe('SuggestionService', () => {
     });
   });
 
-  describe('getUserSuggestionsStats', () => {
-    it('should return suggestions stats', async () => {
-      const mockStats = { totalItems: 5, averageRating: 4.2 };
-      mockSuggestionRepo.getSuggestionsStats.mockResolvedValue(mockStats);
-
-      const result = await service.getUserSuggestionsStats(mockUserId);
-
-      expect(result).toEqual(mockStats);
-      expect(mockSuggestionRepo.getSuggestionsStats).toHaveBeenCalledWith(mockUserId);
-    });
-  });
 });
