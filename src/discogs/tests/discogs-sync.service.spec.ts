@@ -39,21 +39,18 @@ describe('DiscogsSyncService', () => {
     findByUserAndRelease: jest.fn(),
     addToCollection: jest.fn(),
     updateCollectionItem: jest.fn(),
-    getCollectionStats: jest.fn(),
   };
 
   const mockWantlistRepository = {
     findByUserAndRelease: jest.fn(),
     addToWantlist: jest.fn(),
     updateWantlistItem: jest.fn(),
-    getWantlistStats: jest.fn(),
   };
 
   const mockSuggestionRepository = {
     findByUserAndRelease: jest.fn(),
     addToSuggestions: jest.fn(),
     updateSuggestionItem: jest.fn(),
-    getSuggestionsStats: jest.fn(),
   };
 
   const mockBasicInformation: BasicInformation = {
@@ -205,20 +202,6 @@ describe('DiscogsSyncService', () => {
 
     mockReleaseRepository.upsertFromDiscogs.mockResolvedValue(mockRelease);
 
-    mockCollectionRepository.getCollectionStats.mockResolvedValue({
-      totalItems: 1,
-      ratedItems: 1,
-      averageRating: 5,
-    });
-
-    mockWantlistRepository.getWantlistStats.mockResolvedValue({
-      totalItems: 1,
-    });
-
-    mockSuggestionRepository.getSuggestionsStats.mockResolvedValue({
-      totalItems: 1,
-    });
-
     jest.clearAllMocks();
   });
 
@@ -275,20 +258,11 @@ describe('DiscogsSyncService', () => {
   });
 
   describe('syncUserCollection', () => {
-    const mockCollectionStats = {
-      totalItems: 2,
-      ratedItems: 1,
-      averageRating: 4.5,
-    };
-
     beforeEach(() => {
       mockDiscogsApiService.getAllCollection.mockResolvedValue([
         mockDiscogsRelease,
       ]);
       mockReleaseRepository.upsertFromDiscogs.mockResolvedValue(mockRelease);
-      mockCollectionRepository.getCollectionStats.mockResolvedValue(
-        mockCollectionStats,
-      );
     });
 
     it('should sync collection for default user successfully', async () => {
@@ -511,18 +485,11 @@ describe('DiscogsSyncService', () => {
   });
 
   describe('syncUserWantlist', () => {
-    const mockWantlistStats = {
-      totalItems: 3,
-    };
-
     beforeEach(() => {
       mockDiscogsApiService.getAllWantlist.mockResolvedValue([
         mockDiscogsRelease,
       ]);
       mockReleaseRepository.upsertFromDiscogs.mockResolvedValue(mockRelease);
-      mockWantlistRepository.getWantlistStats.mockResolvedValue(
-        mockWantlistStats,
-      );
     });
 
     it('should sync wantlist for default user successfully', async () => {

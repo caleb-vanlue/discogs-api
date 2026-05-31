@@ -5,7 +5,6 @@ import { UserWantlist } from '../../database/entities/user-wantlist.entity';
 import {
   WantlistSortField,
   SortOrder,
-  WANTLIST_SORT_OPTIONS,
   DEFAULT_LIMIT,
   DEFAULT_OFFSET,
   DEFAULT_SORT_ORDER,
@@ -19,22 +18,6 @@ export class UserWantlistRepository {
     @InjectRepository(UserWantlist)
     private readonly repository: Repository<UserWantlist>,
   ) {}
-
-  async findByUserId(
-    userId: string,
-    limit: number = DEFAULT_LIMIT,
-    offset: number = DEFAULT_OFFSET,
-  ): Promise<[UserWantlist[], number]> {
-    this.logger.log(`Finding wantlist for user ${userId}`);
-
-    return this.repository.findAndCount({
-      where: { userId },
-      relations: ['release'],
-      take: limit,
-      skip: offset,
-      order: { dateAdded: DEFAULT_SORT_ORDER },
-    });
-  }
 
   async findByUserIdSorted(
     userId: string,
@@ -103,17 +86,4 @@ export class UserWantlistRepository {
     await this.repository.delete({ userId, releaseId });
   }
 
-  async getWantlistStats(userId: string) {
-    const total = await this.repository.count({
-      where: { userId },
-    });
-
-    return {
-      totalItems: total,
-    };
-  }
-
-  getAvailableSortOptions(): { field: WantlistSortField; label: string }[] {
-    return WANTLIST_SORT_OPTIONS;
-  }
 }

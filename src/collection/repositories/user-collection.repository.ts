@@ -5,7 +5,6 @@ import { UserCollection } from '../../database/entities/user-collection.entity';
 import {
   CollectionSortField,
   SortOrder,
-  COLLECTION_SORT_OPTIONS,
   DEFAULT_LIMIT,
   DEFAULT_OFFSET,
   DEFAULT_SORT_ORDER,
@@ -19,22 +18,6 @@ export class UserCollectionRepository {
     @InjectRepository(UserCollection)
     private readonly repository: Repository<UserCollection>,
   ) {}
-
-  async findByUserId(
-    userId: string,
-    limit: number = DEFAULT_LIMIT,
-    offset: number = DEFAULT_OFFSET,
-  ): Promise<[UserCollection[], number]> {
-    this.logger.log(`Finding collection for user ${userId}`);
-
-    return this.repository.findAndCount({
-      where: { userId },
-      relations: ['release'],
-      take: limit,
-      skip: offset,
-      order: { dateAdded: DEFAULT_SORT_ORDER },
-    });
-  }
 
   async findByUserIdSorted(
     userId: string,
@@ -107,25 +90,4 @@ export class UserCollectionRepository {
     await this.repository.delete({ userId, releaseId });
   }
 
-  async getCollectionStats(userId: string) {
-    const [items, total] = await this.repository.findAndCount({
-      where: { userId },
-    });
-
-    const ratings = items.filter((item) => item.rating > 0);
-    const avgRating =
-      ratings.length > 0
-        ? ratings.reduce((sum, item) => sum + item.rating, 0) / ratings.length
-        : 0;
-
-    return {
-      totalItems: total,
-      ratedItems: ratings.length,
-      averageRating: Math.round(avgRating * 10) / 10,
-    };
-  }
-
-  getAvailableSortOptions(): { field: CollectionSortField; label: string }[] {
-    return COLLECTION_SORT_OPTIONS;
-  }
 }

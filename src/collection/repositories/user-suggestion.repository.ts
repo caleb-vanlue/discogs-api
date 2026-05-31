@@ -19,22 +19,6 @@ export class UserSuggestionRepository {
     private readonly repository: Repository<UserSuggestion>,
   ) {}
 
-  async findByUserId(
-    userId: string,
-    limit: number = DEFAULT_LIMIT,
-    offset: number = DEFAULT_OFFSET,
-  ): Promise<[UserSuggestion[], number]> {
-    this.logger.log(`Finding suggestions for user ${userId}`);
-
-    return this.repository.findAndCount({
-      where: { userId },
-      relations: ['release'],
-      take: limit,
-      skip: offset,
-      order: { dateAdded: DEFAULT_SORT_ORDER },
-    });
-  }
-
   async findByUserIdSorted(
     userId: string,
     limit: number = DEFAULT_LIMIT,
@@ -105,13 +89,4 @@ export class UserSuggestionRepository {
     await this.repository.delete({ userId, releaseId });
   }
 
-  async getSuggestionsStats(userId: string) {
-    const [, total] = await this.repository.findAndCount({
-      where: { userId },
-    });
-
-    return {
-      totalItems: total,
-    };
-  }
 }

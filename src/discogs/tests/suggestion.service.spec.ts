@@ -25,7 +25,6 @@ describe('SuggestionService', () => {
     findByUserAndRelease: jest.fn(),
     removeFromSuggestions: jest.fn(),
     findByUserIdSorted: jest.fn(),
-    getSuggestionsStats: jest.fn(),
   };
 
   const mockReleaseRepo = {
