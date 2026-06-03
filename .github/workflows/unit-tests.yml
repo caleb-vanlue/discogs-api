@@ -23,25 +23,16 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: |
-          Write-Host "Installing dependencies..."
-          npm ci
-        shell: powershell
+        run: npm ci
 
       - name: Run unit tests
-        run: |
-          Write-Host "Running unit tests..."
-          npm run test
-        shell: powershell
+        run: npm run test
         env:
           LOG_LEVEL: silent
           NODE_ENV: test
 
       - name: Run test coverage
-        run: |
-          Write-Host "Running test coverage..."
-          npm run test:cov
-        shell: powershell
+        run: npm run test:cov
         env:
           LOG_LEVEL: silent
           NODE_ENV: test
@@ -57,10 +48,9 @@ jobs:
       - name: Display test results
         if: always()
         run: |
-          Write-Host "Test execution completed"
-          if (Test-Path "coverage/lcov-report/index.html") {
-            Write-Host "Coverage report generated successfully"
-          } else {
-            Write-Host "Coverage report not found"
-          }
-        shell: powershell
+          echo "Test execution completed"
+          if [ -f "coverage/lcov-report/index.html" ]; then
+            echo "Coverage report generated successfully"
+          else
+            echo "Coverage report not found"
+          fi
