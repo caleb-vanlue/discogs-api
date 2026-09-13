@@ -52,7 +52,7 @@ export class UserCollectionRepository {
   async addToCollection(data: {
     userId: string;
     releaseId: number;
-    discogsInstanceId?: number;
+    discogsInstanceId?: string;
     folderId?: number;
     rating?: number;
     notes?: string;
@@ -90,7 +90,10 @@ export class UserCollectionRepository {
     await this.repository.delete({ userId, releaseId });
   }
 
-  async removeOrphans(userId: string, activeDiscogsIds: number[]): Promise<number> {
+  async removeOrphans(
+    userId: string,
+    activeDiscogsIds: number[],
+  ): Promise<number> {
     const itemsToRemove = await this.repository
       .createQueryBuilder('item')
       .innerJoin('item.release', 'release')

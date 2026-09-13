@@ -28,8 +28,8 @@ export class UserCollection {
   @Column({ name: 'release_id' })
   releaseId: number;
 
-  @Column({ name: 'discogs_instance_id', nullable: true })
-  discogsInstanceId: number;
+  @Column({ name: 'discogs_instance_id', type: 'bigint', nullable: true })
+  discogsInstanceId: string;
 
   @Column({ name: 'folder_id', default: 0 })
   folderId: number;

@@ -129,7 +129,11 @@ export class DiscogsApiService {
     this.logger.log('Fetching entire collection from Uncategorized folder...');
 
     do {
-      const response = await this.getCollection({ folder: '1', page, perPage: 100 });
+      const response = await this.getCollection({
+        folder: '1',
+        page,
+        perPage: 100,
+      });
       allReleases.push(...response.releases);
       totalPages = response.pagination.pages;
       page++;
@@ -266,15 +270,18 @@ export class DiscogsApiService {
   async addToFolder(
     releaseId: number,
     folderId?: number,
-  ): Promise<{ instance_id: number }> {
-    const resolvedFolderId = folderId ?? parseInt(this.discogsConfig.suggestionsFolderId, 10);
+  ): Promise<{ instance_id: string }> {
+    const resolvedFolderId =
+      folderId ?? parseInt(this.discogsConfig.suggestionsFolderId, 10);
     try {
       const url = `${this.discogsConfig.baseUrl}/users/${this.discogsConfig.username}/collection/folders/${resolvedFolderId}/releases/${releaseId}`;
 
-      this.logger.debug(`Adding release ${releaseId} to folder ${resolvedFolderId}`);
+      this.logger.debug(
+        `Adding release ${releaseId} to folder ${resolvedFolderId}`,
+      );
 
       const response = await firstValueFrom(
-        this.httpService.post<{ instance_id: number }>(
+        this.httpService.post<{ instance_id: string }>(
           url,
           {},
           {

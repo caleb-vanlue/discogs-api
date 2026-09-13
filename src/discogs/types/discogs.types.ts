@@ -23,7 +23,7 @@ export interface BasicInformation {
 
 export interface DiscogsRelease {
   id: number;
-  instance_id?: number;
+  instance_id?: string;
   rating: number;
   basic_information: BasicInformation;
   notes?: string | Array<{ field_id: number; value: string }>;
